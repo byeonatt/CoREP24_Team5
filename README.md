@@ -1,8 +1,10 @@
-# CoREP24_Team5
-CoREP24기 생산품질5팀 초소형 그리퍼 파지력 측정기
+# Grip Force Measurement System
 
-< 폴더 구성 >
+STM32와 PySide6를 이용한 산업용 파지력 측정 시스템입니다.
 
+## Project Structure
+
+```text
 GripForceMeasurement/
 │
 ├── firmware/                  # STM32 프로젝트
@@ -10,19 +12,19 @@ GripForceMeasurement/
 │   ├── Drivers/
 │   ├── Middlewares/
 │   ├── USB_DEVICE/
-│   ├── .ioc
+│   ├── GripForceMeasurement.ioc
 │   └── README.md
 │
 ├── pc_app/                    # PySide6 프로그램
 │   ├── main.py
 │   ├── app.py
 │   │
-│   ├── ui/                    # UI 파일
+│   ├── ui/                    # Qt Designer(.ui) 파일
 │   │   ├── main_window.ui
 │   │   ├── calibration.ui
 │   │   └── icons/
 │   │
-│   ├── windows/               # 각 창(Window)
+│   ├── windows/               # 각 화면(Window)
 │   │   ├── main_window.py
 │   │   ├── calibration_window.py
 │   │   └── settings_window.py
@@ -31,21 +33,21 @@ GripForceMeasurement/
 │   │   ├── force_display.py
 │   │   └── status_indicator.py
 │   │
-│   ├── communication/         # STM32 통신
+│   ├── communication/         # STM32 USB 통신
 │   │   ├── serial_manager.py
 │   │   └── protocol.py
 │   │
-│   ├── measurement/           # 측정 관련 로직
+│   ├── measurement/           # 측정 및 캘리브레이션
 │   │   ├── measurement.py
 │   │   ├── calibration.py
 │   │   └── session.py
 │   │
-│   ├── utils/
+│   ├── utils/                 # 공통 기능
 │   │   ├── csv_manager.py
 │   │   ├── logger.py
 │   │   └── config.py
 │   │
-│   ├── resources/
+│   ├── resources/             # 아이콘, 이미지, 폰트
 │   │   ├── icons/
 │   │   ├── images/
 │   │   └── fonts/
@@ -57,21 +59,17 @@ GripForceMeasurement/
 │   ├── backup/
 │   └── temp/
 │
-├── docs/
+├── docs/                      # 문서
 │   ├── UI/
 │   ├── Images/
 │   ├── Manual/
 │   └── Report/
 │
-├── test/
+├── test/                      # 테스트 코드
 │   ├── stm32/
 │   └── python/
 │
 ├── README.md
 ├── LICENSE
 └── .gitignore
-│   └── python/
-│
-├── README.md
-├── LICENSE
-└── .gitignore
+```
