@@ -4,6 +4,10 @@ STM32와 PySide6를 이용한 산업용 미세 파지력 측정 시스템
 
 [ 로드셀 -- ADC -- STM32 ] -- miniB -- USB A -- [ PC ]
 
+프로그래밍 방법 :
+이하 Project Structure를 AI에 먹이고,
+생성해주길 바라는 파일 이름 코딩해달라고 하기
+
 ## Project Structure
 
 ```text
@@ -25,7 +29,8 @@ GripForceMeasurement/
 │   │       ├── calibration.cpp
 │   │       ├── measurement.cpp
 │   │       └── usb_protocol.cpp
-│   │
+│   │ 
+│   │ # 이하 STM32 연결 시 자동 생성
 │   ├── Drivers/
 │   ├── Middlewares/
 │   ├── USB_DEVICE/
@@ -36,14 +41,18 @@ GripForceMeasurement/
 │   ├── main.py
 │   ├── app.py
 │   │
-│   ├── ui/                            # Qt Designer(.ui)
-│   │   ├── main_window.ui
-│   │   └── calibration.ui
-│   │
-│   ├── windows/                       # 화면(Window)
-│   │   ├── main_window.py
-│   │   ├── calibration_window.py
-│   │   └── settings_window.py
+│   ├── windows/
+│   │   ├── main/
+│   │   │   ├── main_window.py
+│   │   │   └── main_window.ui
+│   │   │
+│   │   ├── calibration/
+│   │   │   ├── calibration_window.py
+│   │   │   └── calibration.ui
+│   │   │
+│   │   └── settings/
+│   │       ├── settings_window.py
+│   │       └── settings.ui
 │   │
 │   ├── widgets/                       # 사용자 정의 위젯
 │   │   ├── force_display.py
