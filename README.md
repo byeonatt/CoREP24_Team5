@@ -1,6 +1,8 @@
 # Grip Force Measurement System
 
-STM32와 PySide6를 이용한 산업용 파지력 측정 시스템입니다.
+STM32와 PySide6를 이용한 산업용 미세 파지력 측정 시스템
+
+[ 로드셀 -- ADC -- STM32 ] -- miniB -- USB A -- [ PC ]
 
 ## Project Structure
 
