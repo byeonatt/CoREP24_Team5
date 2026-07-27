@@ -9,64 +9,82 @@ STM32와 PySide6를 이용한 산업용 미세 파지력 측정 시스템
 ```text
 GripForceMeasurement/
 │
-├── firmware/                  # STM32 프로젝트
-│   ├── Core/
+├── firmware/                          # STM32 펌웨어 (C++)
+│   ├── Core/                          ### 직접 개발하는 부분
+│   │   ├── Inc/
+│   │   │   ├── loadcell.h
+│   │   │   ├── calibration.h
+│   │   │   ├── measurement.h          # 측정 알고리즘
+│   │   │   ├── usb_protocol.h         # USB 통신
+│   │   │   ├── measurement_types.h    # 공통 구조체
+│   │   │   └── measurement_config.h   # 상수와 설정값
+│   │   │
+│   │   └── Src/
+│   │       ├── main.cpp
+│   │       ├── loadcell.cpp
+│   │       ├── calibration.cpp
+│   │       ├── measurement.cpp
+│   │       └── usb_protocol.cpp
+│   │
 │   ├── Drivers/
 │   ├── Middlewares/
 │   ├── USB_DEVICE/
 │   ├── GripForceMeasurement.ioc
 │   └── README.md
 │
-├── pc_app/                    # PySide6 프로그램
+├── pc_app/                            # PC 제어 프로그램 (Python + PySide6)
 │   ├── main.py
 │   ├── app.py
 │   │
-│   ├── ui/                    # Qt Designer(.ui) 파일
+│   ├── ui/                            # Qt Designer(.ui)
 │   │   ├── main_window.ui
 │   │   └── calibration.ui
 │   │
-│   ├── windows/               # 각 화면(Window)
+│   ├── windows/                       # 화면(Window)
 │   │   ├── main_window.py
 │   │   ├── calibration_window.py
 │   │   └── settings_window.py
 │   │
-│   ├── widgets/               # 사용자 정의 위젯
+│   ├── widgets/                       # 사용자 정의 위젯
 │   │   ├── force_display.py
 │   │   └── status_indicator.py
 │   │
-│   ├── communication/         # STM32 USB 통신
+│   ├── communication/                 # STM32 USB 통신
 │   │   ├── serial_manager.py
 │   │   └── protocol.py
 │   │
-│   ├── measurement/           # 측정 및 캘리브레이션
-│   │   ├── measurement.py
-│   │   ├── calibration.py
-│   │   └── session.py
-│   │
-│   ├── utils/                 # 공통 기능
+│   ├── data/                          # 데이터 관리
 │   │   ├── csv_manager.py
+│   │   ├── session_manager.py
+│   │   └── file_manager.py
+│   │
+│   ├── utils/                         # 공통 기능
 │   │   ├── logger.py
 │   │   └── config.py
 │   │
-│   ├── resources/             # 아이콘, 이미지, 폰트
+│   ├── resources/                     # 아이콘, 이미지, 폰트
 │   │   ├── icons/
 │   │   ├── images/
 │   │   └── fonts/
 │   │
 │   └── requirements.txt
 │
-├── data/                      # 측정 데이터
+├── data/                              # 측정 데이터
 │   ├── csv/
 │   ├── backup/
 │   └── temp/
 │
-├── docs/                      # 문서
+├── docs/                              # 프로젝트 문서
 │   ├── UI/
 │   ├── Images/
 │   ├── Manual/
-│   └── Report/
+│   ├── Report/
+│   ├── Development_Checklist.md
+│   ├── Protocol.md
+│   ├── CSV_Format.md
+│   └── Hardware.md
 │
-├── test/                      # 테스트 코드
+├── test/                              # 테스트 코드
 │   ├── stm32/
 │   └── python/
 │
