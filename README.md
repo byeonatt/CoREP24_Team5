@@ -23,8 +23,7 @@ GripForceMeasurement/
 │   │
 │   ├── ui/                    # Qt Designer(.ui) 파일
 │   │   ├── main_window.ui
-│   │   ├── calibration.ui
-│   │   └── icons/
+│   │   └── calibration.ui
 │   │
 │   ├── windows/               # 각 화면(Window)
 │   │   ├── main_window.py
