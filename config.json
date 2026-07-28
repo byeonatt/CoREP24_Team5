@@ -1,0 +1,12 @@
+{
+    "user": "Default",
+    "save_directory": "./data/csv",
+    "backup_directory": "./data/backup",
+
+    "com_port": "AUTO",
+    
+    "auto_save": true,
+    "auto_reconnect": true,
+
+    "last_session_id": 0
+}

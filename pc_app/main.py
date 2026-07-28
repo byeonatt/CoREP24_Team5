@@ -7,10 +7,28 @@ from PySide6.QtWidgets import QApplication
 from windows.main_window import MainWindow
 from PySide6.QtGui import QIcon
 
-def main():
-    app = QApplication(sys.argv)
+from utils.config import Config
+from data_manager.csv_manager import CSVManager
+from communication.serial_manager import SerialManager
 
-    window = MainWindow()
+
+
+def main():
+    # config reading
+    config = Config()
+    config.create_new_session()
+    config.create_output_directory()
+    
+    csv_manager = CSVManager( config.get_save_directory() )
+    serial_manager = SerialManager(config)
+    
+    # window 생성/실행
+    app = QApplication(sys.argv)
+    window = MainWindow(
+        config=config,
+        csv_manager=csv_manager,
+        serial_manager=serial_manager
+    )
     window.show()
 
     sys.exit(app.exec())
