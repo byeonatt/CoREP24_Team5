@@ -52,6 +52,12 @@ def main():
     result = manager.connect(port)
     print("connect 결과:", result)
 
+    # 2-1. 데이터 송신 테스트
+    if result:
+        print("\n=== 데이터 전송 테스트 ===")
+        send_result = manager.send_data("START")
+        print("send_data 결과:", send_result)
+
     # 3. 상태 확인
     print("\n=== 상태 확인 ===")
     print(
