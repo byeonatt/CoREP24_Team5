@@ -44,13 +44,13 @@ def main():
 
 
     # 테스트할 포트 선택
-    port = ports[0]["port"]
+    port = ports[2]["port"]
 
 
     # 2. 연결 테스트
     print("\n=== 연결 테스트 ===")
     result = manager.connect(port)
-    print("connect 결과:", result)
+    print("connect 결과:", result) # --> USB : COM7
 
     # 2-1. 데이터 송신 테스트
     if result:
