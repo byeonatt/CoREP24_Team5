@@ -17,11 +17,12 @@ class SerialManager(QObject):
     connection_changed = Signal(bool)
     error_occurred = Signal(str)
 
-    def __init__(self):
+    def __init__(self, config):
         super().__init__()
+        self.config = config
         self.serial_port = None
         self.connected = False
-        self.port = None
+        self.port = config.get_com_port()
         self.baudrate = 115200
         self.receive_thread = None
         self.running = False
@@ -130,7 +131,7 @@ class SerialManager(QObject):
             self.connection_changed.emit(False)
             return None
 
-    # STM32로 데이터 전송하기
+    # MCU로 데이터 전송하기
     # 전송 형식 : message + "\n"
     def send_data(self, message):
         if not self.is_connected():

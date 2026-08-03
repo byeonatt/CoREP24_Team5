@@ -7,7 +7,7 @@ STM32 <-> PC 통신 프로토콜(신호) 정의
 from dataclasses import dataclass
 from enum import Enum
 
-# PC -> STM32 전송할 명령 리스트
+# PC -> MCU 전송할 명령 리스트
 class Command(Enum):
     START = "START"
     STOP = "STOP"
@@ -29,7 +29,7 @@ def parse_measurement(line: str) -> MeasurementPacket:
         """
         raise NotImplementedError
 
-# STM32로 전송할 명령 생성
+# MCU로 전송할 명령 생성
 def create_command(command: Command) -> bytes:
         """
         Example

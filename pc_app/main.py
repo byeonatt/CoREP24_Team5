@@ -1,10 +1,9 @@
-### 건드리지 말 것! ###
 # 작성자 : 안수민
 
 import sys
 from pathlib import Path
 from PySide6.QtWidgets import QApplication
-from windows.main_window import MainWindow
+from windows.main.measurement import MeasurementWindow
 from PySide6.QtGui import QIcon
 
 from utils.config import Config
@@ -14,21 +13,21 @@ from communication.serial_manager import SerialManager
 
 
 def main():
-    # config reading
+
     config = Config()
     config.create_new_session()
-    config.create_output_directory()
     
     csv_manager = CSVManager( config.get_save_directory() )
     serial_manager = SerialManager(config)
     
     # window 생성/실행
     app = QApplication(sys.argv)
-    window = MainWindow(
+    window = MeasurementWindow(
         config=config,
         csv_manager=csv_manager,
         serial_manager=serial_manager
     )
+
     window.show()
 
     sys.exit(app.exec())
