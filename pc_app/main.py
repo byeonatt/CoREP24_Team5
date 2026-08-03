@@ -11,7 +11,6 @@ from data_manager.csv_manager import CSVManager
 from communication.serial_manager import SerialManager
 
 
-
 def main():
 
     config = Config()

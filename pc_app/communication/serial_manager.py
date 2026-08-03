@@ -23,6 +23,7 @@ class SerialManager(QObject):
         self.serial_port = None
         self.connected = False
         self.port = config.get_com_port()
+        self.device = "ESP32"
         self.baudrate = 115200
         self.receive_thread = None
         self.running = False

@@ -5,8 +5,6 @@ from pathlib import Path
 
 from windows.main.connect_dialog import ConnectDialog
 
-
-
 class MeasurementWindow(QMainWindow):
 
     def __init__(
@@ -42,45 +40,35 @@ class MeasurementWindow(QMainWindow):
         self.connect_signal()
 
 
-
-
     def test_display(self):
-
         # LCD 테스트
-        if hasattr(
-            self.ui,
-            "lcdCurrentForce"
-        ):
-            self.ui.lcdCurrentForce.display(
-                12.34
-            )
-
-
-        if hasattr(
-            self.ui,
-            "lcdPeakForce"
-        ):
-            self.ui.lcdPeakForce.display(
-                18.56
-            )
+        if hasattr(self.ui, "lcdCurrentForce"):
+            self.ui.lcdCurrentForce.display(12.34)
+            
+        if hasattr(self.ui, "lcdPeakForce"):
+            self.ui.lcdPeakForce.display(18.56)
 
     def update_connection_status(self, connected):
         if connected:
-            self.ui.lblCom.setText(f"COM : {self.serial_manager.port_name}")
-            self.ui.lblDevice.setText("ESP32") #추후 수정
+            self.ui.lblConnectionState.setText("연결 성공")
+            self.ui.lblCom.setText(f"COM : {self.serial_manager.port}")
+            self.ui.lblDevice.setText(f"Device : {self.serial_manager.device}")
         else:
-            self.ui.lblCom.setText("Disconnected")
-            self.ui.lblDevice.setText("-")
+            self.ui.lblConnectionState.setText("연결 해제")
+            self.ui.lblCom.setText("COM : -")
+            self.ui.lblDevice.setText("Device : -")
 
     def connect_signal(self):
         if self.serial_manager:
             self.serial_manager.line_received.connect(self.update_force_display)
             self.serial_manager.connection_changed.connect(self.update_connection_status)
+            self.serial_manager.error_occurred.connect(self.update_error_status)
             self.ui.btnConnect.clicked.connect(self.open_connect_dialog)
+            self.ui.btnExit.clicked.connect(self.close_application)
 
     def open_connect_dialog(self):
-        self.connect_window = ConnectDialog(self.serial_manager)
-        self.connect_window.show()
+        dialog = ConnectDialog(self.serial_manager) 
+        dialog.exec()
 
     def update_force_display(self, data):
 
@@ -94,3 +82,12 @@ class MeasurementWindow(QMainWindow):
 
         except Exception as e:
             print("Force data error:", e)
+
+    def update_error_status(self, message):
+        self.ui.lblConnectionState.setText(message)
+
+    def close_application(self):
+        if self.serial_manager:
+            if self.serial_manager.is_connected():
+                self.serial_manager.disconnect()
+        self.close()
