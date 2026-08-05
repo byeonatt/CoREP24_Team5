@@ -1,5 +1,6 @@
 '''
-STM32-PC USB Serial 통신 전담 모듈
+serial_manager.py
+MCU-PC USB Serial 통신 전담 모듈
 - 연결, 통신
 - 데이터 송/수신
 - 연결 상태 : 이벤트 형태로 main에 전달
@@ -23,17 +24,21 @@ class SerialManager(QObject):
         self.serial_port = None
         self.connected = False
         self.port = config.get_com_port()
-        self.device = "ESP32"
+        self.device = "Unknown"
         self.baudrate = 115200
         self.receive_thread = None
         self.running = False
+        self.last_received_time = time.time()
+        self.timeout_limit = 3.0
 
     ### 통신 연결용 함수 ###
     # 연결(구현) + 끊어진 후 재연결(미구현)
-    def connect(self, port, baudrate=115200) :
+    def connect(self, port, baudrate=115200, device="Unknown") :
         # 이미 연결된 경우
         if self.is_connected():
-            return True
+            if self.port == port :
+                return True
+            self.disconnect()
 
         try:
             self.serial_port = serial.Serial(
@@ -44,6 +49,7 @@ class SerialManager(QObject):
 
             self.port = port
             self.baudrate = baudrate
+            self.device = device
             self.connected = True
 
             # 연결 상태 전달
@@ -51,9 +57,9 @@ class SerialManager(QObject):
             self.running = True
 
             # 수신 시작
-            self._receive_thread = threading.Thread(target=self._receive_loop)
-            self._receive_thread.daemon = True
-            self._receive_thread.start()
+            self.receive_thread = threading.Thread(target=self._receive_loop)
+            self.receive_thread.daemon = True
+            self.receive_thread.start()
             return True
 
         # 시리얼 관련 오류(연결 끊김 등)
@@ -61,6 +67,7 @@ class SerialManager(QObject):
             self.error_occurred.emit(f"Serial 연결 실패: {e}")
             self.connected = False
             self.serial_port = None
+            self.port = None
             return False
 
     # 연결 해제
@@ -69,6 +76,7 @@ class SerialManager(QObject):
             self.running = False
             if self.receive_thread is not None:
                 self.receive_thread.join(timeout=1)
+                self.receive_thread = None
 
             # Serial 포트가 열려 있는 경우
             if self.serial_port is not None:
@@ -78,6 +86,7 @@ class SerialManager(QObject):
             # 상태 초기화
             self.connected = False
             self.serial_port = None
+            self.port = None
 
             # 연결 상태 전달
             self.connection_changed.emit(False)
@@ -138,12 +147,16 @@ class SerialManager(QObject):
         if not self.is_connected():
             self.error_occurred.emit("Serial 연결 없음")
             return False
-
+        
         try:
-            data = message + "\n"
-            self.serial_port.write(data.encode("utf-8"))
+            if isinstance(message, str):
+                data = (message + "\n").encode("utf-8")
+            elif isinstance(message, bytes):
+                data = message
+            else:
+                raise TypeError("지원하지 않는 데이터 형식")
+            self.serial_port.write(data)
             return True
-
         except serial.SerialException as e:
             self.error_occurred.emit(f"Serial 전송 실패: {e}")
             self.connected = False
@@ -156,5 +169,5 @@ class SerialManager(QObject):
             data = self.read_data()
 
             if data is not None:
+                self.last_received_time = time.time()
                 self.line_received.emit(data)
-            time.sleep(0.01)

@@ -6,6 +6,7 @@ from PySide6.QtCore import QFile, QIODevice
 from pathlib import Path
 
 import serial.tools.list_ports
+from windows.main.loading_dialog import LoadingDialog
 
 
 class ConnectDialog:
@@ -29,7 +30,11 @@ class ConnectDialog:
         self.dialog.cmbPort.clear()
         ports = serial.tools.list_ports.comports()
         for port in ports:
-            self.dialog.cmbPort.addItem(port.device)
+            text = f"{port.device} - {port.description}"
+            self.dialog.cmbPort.addItem(text, {
+                "port": port.device,
+                "device": port.description
+            })
 
     def load_baudrates(self):
         baudrates = [
@@ -46,10 +51,20 @@ class ConnectDialog:
         self.dialog.exec()
 
     def connect_device(self):
-        port = self.dialog.cmbPort.currentText()
+        port_info = self.dialog.cmbPort.currentData()
+        port = port_info["port"]
+        device = port_info["device"]
+
         baudrate = int(self.dialog.cmbBaudrate.currentText())
 
+        self.loading_dialog = LoadingDialog("연결 중입니다...")
+        self.loading_dialog.show()
+
         if self.serial_manager:
-            result = self.serial_manager.connect(port, baudrate)
-            if result: self.dialog.accept()
-            else: self.serial_manager.error_occurred.emit("연결 실패")
+            result = self.serial_manager.connect(port, baudrate, device)
+            if result : 
+                self.serial_manager.device = device
+                self.dialog.accept()
+            else : self.serial_manager.error_occurred.emit("연결 실패")
+
+        self.loading_dialog.close()

@@ -1,5 +1,3 @@
-# 작성자 : 안수민
-
 import sys
 from pathlib import Path
 from PySide6.QtWidgets import QApplication
@@ -9,6 +7,7 @@ from PySide6.QtGui import QIcon
 from utils.config import Config
 from data_manager.csv_manager import CSVManager
 from communication.serial_manager import SerialManager
+
 
 
 def main():

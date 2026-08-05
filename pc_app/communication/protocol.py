@@ -1,5 +1,5 @@
 """
-STM32 <-> PC 통신 프로토콜(신호) 정의
+MCU <-> PC 통신 프로토콜(신호) 정의
 - 명령(Command) 정의
 - 데이터(Packet) 파싱
 """
@@ -7,39 +7,62 @@ STM32 <-> PC 통신 프로토콜(신호) 정의
 from dataclasses import dataclass
 from enum import Enum
 
-# PC -> MCU 전송할 명령 리스트
+# PC -> MCU 전송할 데이터 패킷
 class Command(Enum):
-    START = "START"
-    STOP = "STOP"
     ZERO = "ZERO"
     CAL = "CAL"
+    MODE_OD = "MODE_OD"
+    MODE_ID = "MODE_ID"
 
-# 측정 데이터에 포함되는 정보 리스트
-class MeasurementPacket:
-    force: float
-    torque: float | None = None
+# MCU -> PC 전송할 데이터 패킷
+class PacketType(Enum):
+    FORCE = "F"
+    STATUS = "S"
+    ERROR = "E"
+    INFO = "I"
+    CALIBRATION = "C"
+    DEBUG = "D"
 
-# STM32에서 받은 문자열을 MeasurementPacket으로 변환
-def parse_measurement(line: str) -> MeasurementPacket:
-        """
-        Example
-        -------
-        "12.53"
-        "12.53,0.042"
-        """
-        raise NotImplementedError
+@dataclass
+class Packet:
+    type: PacketType
+    value: str | float
+
+# MCU에서 받은 데이터 패킷
+def parse_packet(line:str):
+
+    parts = line.split(",", 1)
+    if len(parts) < 2: return None
+
+    code = parts[0]
+    value = parts[1]
+
+    if code == "F":
+        return Packet(PacketType.FORCE, float(value))
+    elif code == "S":
+        return Packet(PacketType.STATUS, value)
+    elif code == "E":
+        return Packet(PacketType.ERROR, value)
+    elif code == "I":
+        return Packet(PacketType.INFO, value)
+    elif code == "C":
+        return Packet(PacketType.CALIBRATION, value)
+    elif code == "D":
+        return Packet(PacketType.DEBUG, value)
+
+    return None
 
 # MCU로 전송할 명령 생성
-def create_command(command: Command) -> bytes:
-        """
-        Example
-        -------
-        Command.START
-            ↓
-        b"START\\n"
-        """
-        raise NotImplementedError
+def create_command(command: Command) -> str:
+    return f"CMD,{command.value}"
 
 # 수신 데이터가 정상인지 검사
-def validate_packet(line: str) -> bool:
-        raise NotImplementedError
+def validate_packet(line:str):
+
+    if not line: return False
+    parts=line.split(",", 1)
+
+    if len(parts)!=2: return False
+    if parts[0] not in ["F","S","E","I","C","D"]: return False
+
+    return True
