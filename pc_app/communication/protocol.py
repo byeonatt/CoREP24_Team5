@@ -9,6 +9,7 @@ from enum import Enum
 
 # PC -> MCU 전송할 데이터 패킷
 class Command(Enum):
+    START = "CMD,START"
     ZERO = "ZERO"
     GET_CAL = "GET_CAL"        # 현재 캘리브레이션 값 요청
     SET_CAL = "SET_CAL"        # 캘리브레이션 값 저장

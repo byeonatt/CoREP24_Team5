@@ -1,8 +1,8 @@
 {
     "user": "Default",
-    "save_directory": "C:\\Users\\byeonatt\\Documents\\GripForceData",
+    "save_directory": "/Users/yoomiso/Documents/GitHub/CoREP24_Team5/C:\\Users\\byeonatt\\Documents\\GripForceData",
     "com_port": "AUTO",
     "auto_save": true,
     "auto_reconnect": true,
-    "last_session_id": 3
+    "last_session_id": 10
 }
