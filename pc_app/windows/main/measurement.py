@@ -43,6 +43,21 @@ class MeasurementWindow(QMainWindow):
         self.last_data_time = None
         self.device_ready = False
 
+        self.zero_in_progress = False
+
+        self.zero_timer = QTimer(self)
+        self.zero_timer.setSingleShot(True)
+        self.zero_timer.timeout.connect(
+            self.finish_zero_adjustment
+        )
+
+        # 측정 시작 후 3초 대기용 타이머
+        self.start_timer = QTimer(self)
+        self.start_timer.setSingleShot(True)
+        self.start_timer.timeout.connect(
+            self.finish_measurement_start
+        )
+
         # ui 로드
         ui_path = Path(__file__).parent / "measurement.ui"
         ui_file = QFile(str(ui_path))
@@ -96,14 +111,45 @@ class MeasurementWindow(QMainWindow):
 
     def update_connection_status(self, connected):
         self.connected = connected
+
         if connected:
             self.device_ready = False
-            self.ui.lblConnectionState.setText('<span style="color:green;">●</span> 연결 성공')
-            self.ui.lblDevice.setText(f"Device : {self.serial_manager.device}")
+
+            self.ui.lblConnectionState.setText(
+                '<span style="color:green;">●</span> 연결 성공'
+            )
+
+            self.ui.lblDevice.setText(
+                f"Device : {self.serial_manager.device}"
+            )
+
+            self.ui.lblStatus.setText(
+                "상태 : 장치 준비 대기"
+            )
+
         else:
-            self.ui.lblConnectionState.setText('<span style="color:red;">●</span> 연결 해제')
-            self.ui.lblDevice.setText("Device : -")
-        self.update_button_state() 
+            self.device_ready = False
+            self.is_measuring = False
+            self.waiting_measure_start = False
+
+            if self.start_timer.isActive():
+                self.start_timer.stop()
+
+            self.close_current_csv()
+
+            self.ui.lblConnectionState.setText(
+                '<span style="color:red;">●</span> 연결 해제'
+            )
+
+            self.ui.lblDevice.setText(
+                "Device : -"
+            )
+
+            self.ui.lblStatus.setText(
+                "상태 : 대기"
+            )
+
+        self.update_button_state()
 
     def update_button_state(self):
         self.ui.btnSetting.setEnabled(self.connected and not self.is_measuring)
@@ -139,19 +185,58 @@ class MeasurementWindow(QMainWindow):
         except Exception as e:
             self.update_error_status(f"측정 시작 오류: {e}")
 
+    def finish_measurement_start(self):
+        if not self.waiting_measure_start:
+            return
 
-    def stop_measurement(self):
-        command = create_command(Command.STOP)
-        self.serial_manager.send_data(command)
-        self.is_measuring = False
-        self.ui.lblStatus.setText("상태 : 대기")
+        self.waiting_measure_start = False
+        self.is_measuring = True
+        self.last_data_time = time.time()
+
+        self.ui.lblStatus.setText(
+            "상태 : 측정 중"
+        )
 
         self.update_button_state()
 
-        if self.current_csv:
-            self.current_csv.close()
-            self.current_csv = None
-        ... # 디스플레이 갱신 정지 구현
+
+    def stop_measurement(self):
+        if self.start_timer.isActive():
+            self.start_timer.stop()
+
+        self.waiting_measure_start = False
+        self.is_measuring = False
+
+        command = create_command(
+            Command.STOP
+        )
+
+        self.serial_manager.send_data(
+            command
+        )
+
+        self.ui.lblStatus.setText(
+            "상태 : 대기"
+        )
+
+        self.update_button_state()
+
+        self.close_current_csv()
+
+    def close_current_csv(self):
+        if self.current_csv is None:
+            return
+
+        close_method = getattr(
+            self.current_csv,
+            "close",
+            None
+        )
+
+        if callable(close_method):
+            close_method()
+
+        self.current_csv = None
 
     def open_calibration_window(self):
         self.calibration_window = CalibrationWindow(self.serial_manager)
