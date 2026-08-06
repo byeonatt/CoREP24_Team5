@@ -8,12 +8,16 @@ from pathlib import Path
 from data_manager.csv_manager import CSVManager
 from windows.main.connect_dialog import ConnectDialog
 from windows.settings.settings_dialog import SettingsDialog
+from windows.calibration.calibration_window import CalibrationWindow
+
 from communication.protocol import (
     parse_packet,
     PacketType,
     Command,
     create_command
 )
+
+
 
 class MeasurementWindow(QMainWindow):
 
@@ -84,6 +88,7 @@ class MeasurementWindow(QMainWindow):
 
         # UI Button 연결
         self.ui.btnConnect.clicked.connect(self.open_connect_dialog)
+        self.ui.btnCalibration.clicked.connect(self.open_calibration_window)
         self.ui.btnStart.clicked.connect(self.start_measurement)
         self.ui.btnStop.clicked.connect(self.stop_measurement)
         self.ui.btnSetting.clicked.connect(self.open_settings_dialog)
@@ -148,6 +153,10 @@ class MeasurementWindow(QMainWindow):
             self.current_csv = None
         ... # 디스플레이 갱신 정지 구현
 
+    def open_calibration_window(self):
+        self.calibration_window = CalibrationWindow(self.serial_manager)
+        self.calibration_window.show()
+
 
     def open_settings_dialog(self):
         self.setting_dialog = SettingsDialog(self.measure_mode, str(self.config.get_base_directory()), self.serial_manager)
@@ -163,6 +172,7 @@ class MeasurementWindow(QMainWindow):
 
     def update_force_display(self, force):
 
+        force = round(force, 1)
         self.ui.lcdCurrentForce.display(force)
 
         if not self.is_measuring:

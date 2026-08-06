@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
+    <width>410</width>
     <height>350</height>
    </rect>
   </property>
@@ -16,7 +16,7 @@
   <widget class="QRadioButton" name="radioButton_1">
    <property name="geometry">
     <rect>
-     <x>30</x>
+     <x>40</x>
      <y>37</y>
      <width>100</width>
      <height>24</height>
@@ -29,7 +29,7 @@
   <widget class="QRadioButton" name="radioButton_2">
    <property name="geometry">
     <rect>
-     <x>30</x>
+     <x>40</x>
      <y>70</y>
      <width>100</width>
      <height>21</height>
@@ -42,7 +42,7 @@
   <widget class="QLabel" name="lblCom">
    <property name="geometry">
     <rect>
-     <x>10</x>
+     <x>20</x>
      <y>10</y>
      <width>331</width>
      <height>31</height>
@@ -63,7 +63,7 @@
   <widget class="QPushButton" name="applyButton">
    <property name="geometry">
     <rect>
-     <x>270</x>
+     <x>280</x>
      <y>310</y>
      <width>101</width>
      <height>26</height>
@@ -76,7 +76,7 @@
   <widget class="QLabel" name="lblCom_2">
    <property name="geometry">
     <rect>
-     <x>10</x>
+     <x>20</x>
      <y>210</y>
      <width>331</width>
      <height>31</height>
@@ -97,7 +97,7 @@
   <widget class="QPushButton" name="pushButton_Zero">
    <property name="geometry">
     <rect>
-     <x>20</x>
+     <x>30</x>
      <y>240</y>
      <width>141</width>
      <height>26</height>
@@ -110,7 +110,7 @@
   <widget class="QLabel" name="lblCom_3">
    <property name="geometry">
     <rect>
-     <x>10</x>
+     <x>20</x>
      <y>110</y>
      <width>331</width>
      <height>31</height>
@@ -131,7 +131,7 @@
   <widget class="QLineEdit" name="txtSavePath">
    <property name="geometry">
     <rect>
-     <x>20</x>
+     <x>30</x>
      <y>140</y>
      <width>251</width>
      <height>26</height>
@@ -144,7 +144,7 @@
   <widget class="QPushButton" name="btnBrowse">
    <property name="geometry">
     <rect>
-     <x>270</x>
+     <x>280</x>
      <y>140</y>
      <width>101</width>
      <height>26</height>
@@ -157,7 +157,7 @@
   <widget class="QPushButton" name="btnResetPath">
    <property name="geometry">
     <rect>
-     <x>20</x>
+     <x>30</x>
      <y>170</y>
      <width>141</width>
      <height>26</height>

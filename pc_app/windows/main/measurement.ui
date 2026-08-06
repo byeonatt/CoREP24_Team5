@@ -245,7 +245,7 @@
         </size>
        </property>
        <property name="text">
-        <string>캘리브레이션</string>
+        <string>캘리브레이션(미구현)</string>
        </property>
       </widget>
      </item>
