@@ -10,9 +10,11 @@ from enum import Enum
 # PC -> MCU 전송할 데이터 패킷
 class Command(Enum):
     ZERO = "ZERO"
-    CAL = "CAL"
-    MODE_OD = "MODE_OD"
-    MODE_ID = "MODE_ID"
+    GET_CAL = "GET_CAL"        # 현재 캘리브레이션 값 요청
+    SET_CAL = "SET_CAL"        # 캘리브레이션 값 저장
+    MODE_OD = "MODE_OD"         # 외경
+    MODE_ID_2 = "MODE_ID_2"     # 내경 2-Jaw
+    MODE_ID_3 = "MODE_ID_3"     # 내경 3-Jaw
 
 # MCU -> PC 전송할 데이터 패킷
 class PacketType(Enum):

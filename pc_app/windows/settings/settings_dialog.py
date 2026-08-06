@@ -9,7 +9,7 @@ from communication.protocol import Command, create_command
 
 class SettingsDialog:
 
-    def __init__(self, current_mode="OD", save_directory=None, serial_manager=None):
+    def __init__(self, current_mode="MODE_OD", save_directory=None, serial_manager=None):
         self.measure_mode = current_mode
         self.save_directory = save_directory
         self.serial_manager = serial_manager
@@ -25,7 +25,7 @@ class SettingsDialog:
         ui_file.close()
         self.dialog.setWindowTitle("Settings")
 
-        if self.measure_mode == "OD":
+        if self.measure_mode == "MODE_OD":
             self.dialog.radioButton_1.setChecked(True)
         else:
             self.dialog.radioButton_2.setChecked(True)
@@ -48,9 +48,12 @@ class SettingsDialog:
 
     def apply_setting(self):
         if self.dialog.radioButton_1.isChecked():
-            self.measure_mode = "OD"
+            self.measure_mode = "MODE_OD"
         elif self.dialog.radioButton_2.isChecked():
-            self.measure_mode = "ID"
+            self.measure_mode = "MODE_ID_2"
+        elif self.dialog.radioButton_3.isChecked():
+            self.measure_mode = "MODE_ID_3"
+        else : return
         self.save_directory = (self.dialog.txtSavePath.text())
 
         self.dialog.accept()
@@ -60,14 +63,15 @@ class SettingsDialog:
             return
         
         if self.dialog.radioButton_1.isChecked():
-            self.measure_mode = "OD"
+            self.measure_mode = "MODE_OD"
             command = create_command(Command.MODE_OD)
-
         elif self.dialog.radioButton_2.isChecked():
-            self.measure_mode = "ID"
-            command = create_command(Command.MODE_ID)
-        else:
-            return
+            self.measure_mode = "MODE_ID_2"
+            command = create_command(Command.MODE_ID_2)
+        elif self.dialog.radioButton_3.isChecked():
+            self.measure_mode = "MODE_ID_3"
+            command = create_command(Command.MODE_ID_3)
+        else : return
 
         if self.serial_manager:
             self.serial_manager.send_data(command)

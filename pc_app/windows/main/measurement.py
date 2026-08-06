@@ -38,7 +38,7 @@ class MeasurementWindow(QMainWindow):
         self.current_csv = None
         self.connected = False
         self.peak_force = 0
-        self.measure_mode = "OD"   # OD : 외경, ID : 내경
+        self.measure_mode = "MODE_OD"
         self.waiting_measure_start = False
         self.last_data_time = None
         self.device_ready = False
@@ -191,10 +191,16 @@ class MeasurementWindow(QMainWindow):
         self.ui.lblStatus.setText("상태 : 대기")
 
     def update_measure_mode(self):
-        if self.measure_mode == "OD":
-            self.ui.lblMode.setText("Mode : 외경")
+        if self.measure_mode == "MODE_OD":
+            text = "외경"
+        elif self.measure_mode == "MODE_ID_2":
+            text = "내경 2-Jaw"
+        elif self.measure_mode == "MODE_ID_3":
+            text = "내경 3-Jaw"
         else:
-            self.ui.lblMode.setText("Mode : 내경")
+            text = "Unknown"
+
+        self.ui.lblMode.setText(f"Mode : {text}")
 
     def close_application(self):
         if self.serial_manager:
