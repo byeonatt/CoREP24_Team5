@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QDialog, QMessageBox
+from PySide6.QtWidgets import QFileDialog, QMessageBox
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtCore import QFile, QIODevice
 from pathlib import Path
@@ -9,8 +9,9 @@ from communication.protocol import Command, create_command
 
 class SettingsDialog:
 
-    def __init__(self, current_mode="OD", serial_manager=None):
+    def __init__(self, current_mode="OD", save_directory=None, serial_manager=None):
         self.measure_mode = current_mode
+        self.save_directory = save_directory
         self.serial_manager = serial_manager
 
         ui_path = Path(__file__).parent / "settings.ui"
@@ -28,11 +29,19 @@ class SettingsDialog:
             self.dialog.radioButton_1.setChecked(True)
         else:
             self.dialog.radioButton_2.setChecked(True)
+        self.dialog.txtSavePath.setText(save_directory)
+
+        if save_directory:
+            self.dialog.txtSavePath.setText(str(save_directory))
+        else:
+            self.dialog.txtSavePath.setText(str(Path.home()/"Documents"/"GripForceData"))
 
         self.connect_signal()
 
     def connect_signal(self):
         self.dialog.applyButton.clicked.connect(self.apply_setting)
+        self.dialog.btnBrowse.clicked.connect(self.select_folder)
+        self.dialog.btnResetPath.clicked.connect(self.reset_path)
         self.dialog.radioButton_1.toggled.connect(self.mode_changed)
         self.dialog.radioButton_2.toggled.connect(self.mode_changed)
         self.dialog.pushButton_Zero.clicked.connect(self.zero_calibration)
@@ -42,13 +51,18 @@ class SettingsDialog:
             self.measure_mode = "OD"
         elif self.dialog.radioButton_2.isChecked():
             self.measure_mode = "ID"
+        self.save_directory = (self.dialog.txtSavePath.text())
 
         self.dialog.accept()
 
-    def mode_changed(self):
+    def mode_changed(self, checked):
+        if not checked:
+            return
+        
         if self.dialog.radioButton_1.isChecked():
             self.measure_mode = "OD"
             command = create_command(Command.MODE_OD)
+
         elif self.dialog.radioButton_2.isChecked():
             self.measure_mode = "ID"
             command = create_command(Command.MODE_ID)
@@ -83,3 +97,11 @@ class SettingsDialog:
                 "오류",
                 "ZERO 명령 전송 실패"
             )
+
+    def select_folder(self):
+        folder = QFileDialog.getExistingDirectory(None, "저장 폴더 선택")
+        if folder:
+            self.dialog.txtSavePath.setText(folder)
+
+    def reset_path(self):
+        self.dialog.txtSavePath.setText(str(Path.home()/"Documents"/"GripForceData"))

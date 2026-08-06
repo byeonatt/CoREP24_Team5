@@ -1,9 +1,8 @@
 {
     "user": "Default",
-    "save_directory": "./data/csv",
-    "backup_directory": "./data/backup",
+    "save_directory": "C:\\Users\\byeonatt\\Documents\\GripForceData",
     "com_port": "AUTO",
     "auto_save": true,
     "auto_reconnect": true,
-    "last_session_id": 88
+    "last_session_id": 8
 }

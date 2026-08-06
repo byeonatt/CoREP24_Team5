@@ -11,8 +11,7 @@ class Config:
 
     DEFAULT_CONFIG = {
         "user": "Default",
-        "save_directory": "./data/csv",
-        "backup_directory": "./data/backup",
+        "save_directory": "",
         "com_port": "AUTO",
         "auto_save": True,
         "auto_reconnect": True,
@@ -34,19 +33,33 @@ class Config:
 
         with open(self.config_path, "r", encoding="utf-8") as f:
             return json.load(f)
+
     
     # csv 저장 폴더 생성/반환 함수
+    def get_base_directory(self) -> Path:
+        save_directory = self.config.get("save_directory", "")
+
+        if save_directory:
+            base = Path(save_directory).expanduser()
+        else:
+            base = (Path.home()/"Documents"/"GripForceData")
+
+        if not base.is_absolute():
+            base = self.project_root / base
+
+        return base.resolve()
+
     def get_save_directory(self) -> Path:
-        base = Path(self.config["save_directory"]).expanduser()
-        if not base.is_absolute() : base = self.project_root / base
         session = f"Session{self.get_session_id():03d}"
-        return (base / session).resolve()
-    
+        return (self.get_base_directory()/session).resolve()
+
+
     def set_save_directory(self, directory: str | Path):
         directory = Path(directory).expanduser().resolve()
         directory.mkdir(parents=True, exist_ok=True)
         self.config["save_directory"] = str(directory)
         self.save()
+
 
     # 현재 설정을 config.json에 저장
     def save(self):
