@@ -7,6 +7,9 @@ MCU-PC USB Serial 통신 전담 모듈
 '''
 import serial
 import serial.tools.list_ports
+import json
+import platform
+import subprocess
 from PySide6.QtCore import QObject, Signal
 
 import threading
@@ -17,6 +20,7 @@ class SerialManager(QObject):
     line_received = Signal(str)
     connection_changed = Signal(bool)
     error_occurred = Signal(str)
+    connect_finished = Signal(bool, str)
 
     def __init__(self, config):
         super().__init__()
@@ -28,54 +32,97 @@ class SerialManager(QObject):
         self.baudrate = 115200
         self.receive_thread = None
         self.running = False
+        self.connect_thread = None
+        self.connecting = False
         self.last_received_time = time.time()
         self.timeout_limit = 3.0
 
     ### 통신 연결용 함수 ###
     # 연결(구현) + 끊어진 후 재연결(미구현)
-    def connect(self, port, baudrate=115200, device="Unknown") :
-        # 이미 연결된 경우
-        if self.is_connected():
-            if self.port == port :
-                return True
-            self.disconnect()
+    def connect_async(self, port, baudrate=115200, device="Unknown"):
+        # 이미 연결 시도 중이면 중복 실행 방지
+        if self.connecting: return
+
+        self.connecting = True
+        self.connect_thread = threading.Thread(
+            target=self._connect_worker,
+            args=(port, baudrate, device),
+            daemon=True
+        )
+
+        self.connect_thread.start()
+
+    def _connect_worker(self, port, baudrate, device):
+        success = False
+        message = ""
 
         try:
-            self.serial_port = serial.Serial(
-                port=port,
-                baudrate=baudrate,
-                timeout=1
-            )
+            # 이미 연결되어 있는 경우
+            if self.is_connected():
 
-            self.port = port
-            self.baudrate = baudrate
-            self.device = device
-            self.connected = True
+                # 같은 포트면 그대로 성공 처리
+                if self.port == port:
+                    success = True
+                else:
+                    self.disconnect()
 
-            # 연결 상태 전달
-            self.connection_changed.emit(True)
-            self.running = True
+            # 새 연결이 필요한 경우
+            if not success:
 
-            # 수신 시작
-            self.receive_thread = threading.Thread(target=self._receive_loop)
-            self.receive_thread.daemon = True
-            self.receive_thread.start()
-            return True
+                serial_port = serial.Serial(
+                    port=port,
+                    baudrate=baudrate,
+                    timeout=0.2,
+                    write_timeout=0.5
+                )
 
-        # 시리얼 관련 오류(연결 끊김 등)
-        except serial.SerialException as e:
-            self.error_occurred.emit(f"Serial 연결 실패: {e}")
+                self.serial_port = serial_port
+                self.port = port
+                self.baudrate = baudrate
+                self.device = device
+
+                self.connected = True
+                self.running = True
+
+                self.receive_thread = threading.Thread(
+                    target=self._receive_loop,
+                    daemon=True
+                )
+
+                self.receive_thread.start()
+                self.connection_changed.emit(True)
+                success = True
+
+        except (serial.SerialException, OSError) as e:
             self.connected = False
+            self.running = False
+            if self.serial_port is not None:
+                try:
+                    if self.serial_port.is_open:
+                        self.serial_port.close()
+                except Exception:
+                    pass
+
             self.serial_port = None
             self.port = None
-            return False
+            message = f"Serial 연결 실패:\n{e}"
+
+        except Exception as e:
+            self.connected = False
+            self.running = False
+            self.serial_port = None
+            message = f"연결 중 예상하지 못한 오류:\n{e}"
+
+        finally:
+            self.connecting = False
+            self.connect_finished.emit(success, message)
 
     # 연결 해제
     def disconnect(self) :
         try:
             self.running = False
             if self.receive_thread is not None:
-                self.receive_thread.join(timeout=1)
+                self.receive_thread.join(timeout=0.5)
                 self.receive_thread = None
 
             # Serial 포트가 열려 있는 경우
@@ -104,24 +151,129 @@ class SerialManager(QObject):
     
     # 연결 종료 처리
     def close(self) :
-        ...
+        self.disconnect()
 
-    # COM 포트 검색
-    def find_ports(self) :
+    # 실제 연결이 가능한 USB포트 검색
+    def find_ports(self):
         ports = []
 
         try:
             devices = serial.tools.list_ports.comports()
-            for device in devices:
+
+            for device in sorted(devices, key=lambda x: x.device):
                 ports.append({
-            "port": device.device,
-            "description": device.description
-        })
+                    "port": device.device,
+                    "description": device.description,
+                    "hwid": device.hwid,
+
+                    "vid": device.vid,
+                    "pid": device.pid,
+
+                    "serial_number": device.serial_number,
+                    "manufacturer": device.manufacturer,
+                    "product": device.product,
+                    "interface": device.interface,
+
+                    "connectable": True
+                })
 
         except Exception as e:
             self.error_occurred.emit(f"Serial 포트 검색 실패: {e}")
 
         return ports
+
+    def find_usb_candidates(self):
+        if platform.system() != "Windows": return []
+
+        try:
+            powershell_script = r"""
+            [Console]::OutputEncoding =
+                [System.Text.Encoding]::UTF8
+
+            Get-PnpDevice -PresentOnly |
+            Select-Object Status,Class,FriendlyName,InstanceId |
+            ConvertTo-Json -Compress
+            """
+
+            result = subprocess.run(
+                [
+                    "powershell",
+                    "-NoProfile",
+                    "-Command",
+                    powershell_script
+                ],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=5,
+                creationflags=subprocess.CREATE_NO_WINDOW
+            )
+
+            if result.returncode != 0: return []
+
+            output = result.stdout.strip()
+            if not output: return []
+
+            devices = json.loads(output)
+
+            # 장치가 하나뿐이면 dict로 반환될 수 있음
+            if isinstance(devices, dict):
+                devices = [devices]
+
+            candidates = []
+
+            keywords = (
+                "ESP32",
+                "ESPRESSIF",
+                "USB SERIAL",
+                "USB-SERIAL",
+                "SERIAL/JTAG",
+                "USB JTAG",
+                "CP210",
+                "CH340",
+                "CH341",
+                "UART",
+                "CDC"
+            )
+
+            known_vids = (
+                "VID_303A",   # Espressif
+                "VID_10C4",   # Silicon Labs CP210x
+                "VID_1A86",   # WCH CH34x
+                "VID_0403"    # FTDI
+            )
+
+            for device in devices:
+                name = str(device.get("FriendlyName") or "")
+                instance_id = str(device.get("InstanceId") or "")
+                class_name = str(device.get("Class") or "")
+                combined = (name + " " + instance_id).upper()
+
+                is_candidate = (
+                    any(keyword in combined for keyword in keywords)
+                    or any(vid in combined for vid in known_vids)
+                )
+
+                if not is_candidate:
+                    continue
+
+                # 이미 COM 포트가 생성된 장치는
+                # find_ports()에서 처리하므로 제외
+                if "(COM" in name.upper():
+                    continue
+
+                candidates.append({
+                    "name": name or "알 수 없는 USB 장치",
+                    "class": class_name,
+                    "status": device.get("Status"),
+                    "instance_id": instance_id,
+                    "connectable": False
+                })
+
+            return candidates
+
+        except Exception: return []
 
     ### 데이터 송수신용 함수 ###
     # 데이터 읽기
@@ -171,3 +323,4 @@ class SerialManager(QObject):
             if data is not None:
                 self.last_received_time = time.time()
                 self.line_received.emit(data)
+            else: time.sleep(0.001)

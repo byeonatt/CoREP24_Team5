@@ -1,343 +1,1063 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>MainWindow</class>
- <widget class="QMainWindow" name="MainWindow">
+ <class>MeasurementWindow</class>
+ <widget class="QMainWindow" name="MeasurementWindow">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>900</width>
-    <height>600</height>
+    <width>1536</width>
+    <height>1024</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
-    <width>900</width>
-    <height>600</height>
+    <width>1200</width>
+    <height>800</height>
    </size>
   </property>
   <property name="windowTitle">
    <string>Grip Force Measurement System</string>
   </property>
-  <widget class="QWidget" name="centralWidget">
-   <widget class="QWidget" name="layoutWidget">
-    <property name="geometry">
-     <rect>
-      <x>9</x>
-      <y>9</y>
-      <width>561</width>
-      <height>561</height>
-     </rect>
+  <property name="styleSheet">
+   <string notr="true">
+QMainWindow, QWidget#centralwidget {
+    background: #f7f8fa;
+    color: #202124;
+    font-family: &quot;Malgun Gothic&quot;;
+    font-size: 10pt;
+}
+QFrame#topBar, QFrame#card {
+    background: white;
+    border: 1px solid #d9dde3;
+    border-radius: 8px;
+}
+QFrame#navBar {
+    background: white;
+    border-bottom: 1px solid #d9dde3;
+}
+QPushButton {
+    background: #ffffff;
+    border: 1px solid #cfd5dc;
+    border-radius: 6px;
+    padding: 8px 14px;
+}
+QPushButton:hover {
+    background: #f0f4f8;
+}
+QPushButton#startButton {
+    background: #eaf7ee;
+    border: 1px solid #8bc89c;
+    color: #218739;
+    font-weight: bold;
+}
+QPushButton#stopButton {
+    background: #fff0f0;
+    border: 1px solid #e6a4a4;
+    color: #c93030;
+    font-weight: bold;
+}
+QPushButton#zeroButton {
+    background: #ffffff;
+    border: 1px solid #bfc6cf;
+}
+QPushButton#saveButton {
+    background: #ffffff;
+    border: 1px solid #bfc6cf;
+}
+QLabel#connectedLabel {
+    color: #249447;
+    font-weight: bold;
+    font-size: 12pt;
+}
+QLabel#currentForceLabel {
+    color: #249447;
+    font-size: 30pt;
+    font-weight: bold;
+}
+QLabel#peakForceLabel {
+    color: #1769d2;
+    font-size: 30pt;
+    font-weight: bold;
+}
+QLabel#averageForceLabel {
+    color: #202124;
+    font-size: 30pt;
+    font-weight: bold;
+}
+QLabel#sumForceLabel {
+    color: #1769d2;
+    font-size: 17pt;
+    font-weight: bold;
+}
+QLabel#loadCellValueLabel {
+    color: #249447;
+    font-size: 14pt;
+    font-weight: bold;
+}
+QLabel#sectionTitle {
+    font-size: 13pt;
+    font-weight: bold;
+}
+QLabel#metricTitle {
+    font-size: 12pt;
+    font-weight: bold;
+}
+QLabel#graphHint {
+    color: #8b929b;
+    font-size: 10pt;
+}
+QLabel#forceStatusLabel {
+    color: #258642;
+    font-size: 11pt;
+    font-weight: bold;
+}
+QLabel#forceRangeLabel {
+    color: #555d66;
+    font-weight: bold;
+}
+QLineEdit, QTextEdit, QTableWidget {
+    background: white;
+    border: 1px solid #d5d9df;
+    border-radius: 6px;
+}
+QTableWidget {
+    gridline-color: #e1e4e8;
+    selection-background-color: #eaf2ff;
+}
+QStatusBar {
+    background: white;
+    border-top: 1px solid #d9dde3;
+}
+   </string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="mainVerticalLayout">
+    <property name="spacing">
+     <number>8</number>
     </property>
-    <layout class="QVBoxLayout" name="leftLayout">
-     <item>
-      <widget class="QGroupBox" name="connectionGroup">
-       <property name="maximumSize">
-        <size>
-         <width>16777215</width>
-         <height>106</height>
-        </size>
-       </property>
-       <property name="title">
-        <string>연결상태</string>
-       </property>
-       <layout class="QVBoxLayout" name="connectionLayout">
-        <item>
-         <widget class="QLabel" name="lblConnectionState">
-          <property name="styleSheet">
-           <string>
-              font-size:18px;
-              font-weight:bold;
-             </string>
-          </property>
-          <property name="text">
-           <string>● 연결 해제</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignmentFlag::AlignCenter</set>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="lblStatus">
-          <property name="text">
-           <string>Status : -</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignmentFlag::AlignCenter</set>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="lblDevice">
-          <property name="text">
-           <string>Device : -</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignmentFlag::AlignCenter</set>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-     </item>
-     <item>
-      <widget class="QGroupBox" name="forceGroup">
-       <property name="title">
-        <string>파지력 측정</string>
-       </property>
-       <widget class="QLabel" name="Nlabel1">
-        <property name="geometry">
-         <rect>
-          <x>470</x>
-          <y>160</y>
-          <width>29</width>
-          <height>48</height>
-         </rect>
-        </property>
-        <property name="styleSheet">
-         <string>
-              font-size:36px;
-              font-weight:bold;
-             </string>
-        </property>
-        <property name="text">
-         <string>N</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignmentFlag::AlignCenter</set>
-        </property>
-       </widget>
-       <widget class="QLabel" name="Nlabel2">
-        <property name="geometry">
-         <rect>
-          <x>470</x>
-          <y>380</y>
-          <width>26</width>
-          <height>43</height>
-         </rect>
-        </property>
-        <property name="styleSheet">
-         <string>
-              font-size:32px;
-              font-weight:bold;
-             </string>
-        </property>
-        <property name="text">
-         <string>N</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignmentFlag::AlignCenter</set>
-        </property>
-       </widget>
-       <widget class="QLCDNumber" name="lcdCurrentForce">
-        <property name="geometry">
-         <rect>
-          <x>10</x>
-          <y>70</y>
-          <width>431</width>
-          <height>141</height>
-         </rect>
-        </property>
-       </widget>
-       <widget class="QLCDNumber" name="lcdPeakForce">
-        <property name="geometry">
-         <rect>
-          <x>10</x>
-          <y>290</y>
-          <width>431</width>
-          <height>141</height>
-         </rect>
-        </property>
-       </widget>
-       <widget class="QLabel" name="lblCurrentForce">
-        <property name="geometry">
-         <rect>
-          <x>20</x>
-          <y>20</y>
-          <width>221</width>
-          <height>48</height>
-         </rect>
-        </property>
-        <property name="styleSheet">
-         <string>
-              font-size:36px;
-              font-weight:bold;
-             </string>
-        </property>
-        <property name="text">
-         <string>현재 힘</string>
-        </property>
-       </widget>
-       <widget class="QLabel" name="lblPeakForce">
-        <property name="geometry">
-         <rect>
-          <x>20</x>
-          <y>240</y>
-          <width>221</width>
-          <height>48</height>
-         </rect>
-        </property>
-        <property name="styleSheet">
-         <string>
-              font-size:36px;
-              font-weight:bold;
-             </string>
-        </property>
-        <property name="text">
-         <string>최대 힘</string>
-        </property>
-       </widget>
-       <widget class="QLabel" name="lblMode">
-        <property name="geometry">
-         <rect>
-          <x>150</x>
-          <y>40</y>
-          <width>191</width>
-          <height>21</height>
-         </rect>
-        </property>
-        <property name="font">
-         <font>
-          <pointsize>14</pointsize>
-         </font>
-        </property>
-        <property name="text">
-         <string>Mode : 외경</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
-        </property>
-       </widget>
-      </widget>
-     </item>
-    </layout>
-   </widget>
-   <widget class="QWidget" name="layoutWidget">
-    <property name="geometry">
-     <rect>
-      <x>580</x>
-      <y>10</y>
-      <width>301</width>
-      <height>561</height>
-     </rect>
+    <property name="leftMargin">
+     <number>14</number>
     </property>
-    <layout class="QVBoxLayout" name="rightLayout">
-     <item>
-      <widget class="QPushButton" name="btnConnect">
-       <property name="minimumSize">
-        <size>
-         <width>0</width>
-         <height>55</height>
-        </size>
+    <property name="topMargin">
+     <number>8</number>
+    </property>
+    <property name="rightMargin">
+     <number>14</number>
+    </property>
+    <property name="bottomMargin">
+     <number>8</number>
+    </property>
+    <item>
+     <widget class="QFrame" name="navBar">
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>58</height>
+       </size>
+      </property>
+      <layout class="QHBoxLayout" name="navLayout">
+       <property name="leftMargin">
+        <number>14</number>
        </property>
-       <property name="text">
-        <string>연결</string>
+       <property name="topMargin">
+        <number>5</number>
        </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="btnCalibration">
-       <property name="minimumSize">
-        <size>
-         <width>0</width>
-         <height>55</height>
-        </size>
+       <property name="rightMargin">
+        <number>14</number>
        </property>
-       <property name="text">
-        <string>캘리브레이션(미구현)</string>
+       <property name="bottomMargin">
+        <number>5</number>
        </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="Line" name="line1">
-       <property name="orientation">
-        <enum>Qt::Orientation::Horizontal</enum>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="btnPeakReset">
-       <property name="minimumSize">
-        <size>
-         <width>0</width>
-         <height>55</height>
-        </size>
-       </property>
-       <property name="text">
-        <string>최대 힘 리셋</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="btnSetting">
-       <property name="minimumSize">
-        <size>
-         <width>0</width>
-         <height>55</height>
-        </size>
-       </property>
-       <property name="text">
-        <string>측정 설정</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="btnStart">
-       <property name="minimumSize">
-        <size>
-         <width>0</width>
-         <height>55</height>
-        </size>
-       </property>
-       <property name="text">
-        <string>측정 시작</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="btnStop">
-       <property name="minimumSize">
-        <size>
-         <width>0</width>
-         <height>55</height>
-        </size>
-       </property>
-       <property name="text">
-        <string>측정 종료</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <spacer name="buttonSpacer">
-       <property name="orientation">
-        <enum>Qt::Orientation::Vertical</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>20</width>
-         <height>80</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item>
-      <widget class="QPushButton" name="btnExit">
-       <property name="minimumSize">
-        <size>
-         <width>0</width>
-         <height>55</height>
-        </size>
-       </property>
-       <property name="text">
-        <string>나가기</string>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </widget>
+       <item>
+        <widget class="QPushButton" name="measurementTabButton">
+         <property name="minimumSize">
+          <size>
+           <width>130</width>
+           <height>44</height>
+          </size>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">background:#1976d2;color:white;border:0;border-radius:6px;font-weight:bold;font-size:12pt;</string>
+         </property>
+         <property name="text">
+          <string>⌂  측정</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="calibrationTabButton">
+         <property name="minimumSize">
+          <size>
+           <width>150</width>
+           <height>44</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>⚒  캘리브레이션</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="dataTabButton">
+         <property name="minimumSize">
+          <size>
+           <width>110</width>
+           <height>44</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>▣  데이터</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="settingsTabButton">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>110</width>
+           <height>44</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>⚙  설정</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="navSpacer">
+         <property name="orientation">
+          <enum>Qt::Orientation::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <layout class="QGridLayout" name="contentGrid">
+      <property name="spacing">
+       <number>8</number>
+      </property>
+      <item row="0" column="0">
+       <widget class="QFrame" name="card">
+        <property name="minimumSize">
+         <size>
+          <width>280</width>
+          <height>190</height>
+         </size>
+        </property>
+        <layout class="QVBoxLayout" name="deviceStatusLayout">
+         <item>
+          <widget class="QLabel" name="sectionTitle">
+           <property name="text">
+            <string>장비 연결 상태</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="connectedLabel">
+           <property name="text">
+            <string>●  연결 대기</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QFrame" name="deviceInfoFrame">
+           <property name="frameShape">
+            <enum>QFrame::Shape::NoFrame</enum>
+           </property>
+           <layout class="QFormLayout" name="deviceInfoLayout">
+            <item row="0" column="0">
+             <widget class="QLabel" name="portTitle">
+              <property name="text">
+               <string>포트</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QLabel" name="portValueLabel">
+              <property name="text">
+               <string>-</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="deviceTitle">
+              <property name="text">
+               <string>장비</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QLabel" name="deviceValueLabel">
+              <property name="text">
+               <string>-</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="modeTitle">
+              <property name="text">
+               <string>측정 모드</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QLabel" name="modeValueLabel">
+              <property name="text">
+               <string>미설정</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QFrame" name="card">
+        <property name="minimumSize">
+         <size>
+          <width>550</width>
+          <height>170</height>
+         </size>
+        </property>
+        <layout class="QHBoxLayout" name="metricsLayout">
+         <item>
+          <layout class="QVBoxLayout" name="currentMetricLayout">
+           <item>
+            <widget class="QLabel" name="metricTitle">
+             <property name="text">
+              <string>현재 파지력</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="currentForceLabel">
+             <property name="text">
+              <string>0.00 N</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <widget class="Line" name="metricLine1">
+           <property name="orientation">
+            <enum>Qt::Orientation::Vertical</enum>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <layout class="QVBoxLayout" name="peakMetricLayout">
+           <item>
+            <widget class="QLabel" name="metricTitle">
+             <property name="text">
+              <string>최대 파지력</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="peakForceLabel">
+             <property name="text">
+              <string>0.00 N</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <widget class="Line" name="metricLine2">
+           <property name="orientation">
+            <enum>Qt::Orientation::Vertical</enum>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <layout class="QVBoxLayout" name="averageMetricLayout">
+           <item>
+            <widget class="QLabel" name="metricTitle">
+             <property name="text">
+              <string>평균 파지력</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="averageForceLabel">
+             <property name="text">
+              <string>0.00 N</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <widget class="QFrame" name="forceStatusFrame">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>54</height>
+            </size>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">background:#eef8f1;border:1px solid #b7d9c0;border-radius:6px;</string>
+           </property>
+           <layout class="QHBoxLayout" name="forceStatusLayout">
+            <property name="leftMargin">
+             <number>12</number>
+            </property>
+            <property name="topMargin">
+             <number>5</number>
+            </property>
+            <property name="rightMargin">
+             <number>12</number>
+            </property>
+            <property name="bottomMargin">
+             <number>5</number>
+            </property>
+            <item>
+             <widget class="QLabel" name="forceStatusTitle">
+              <property name="font">
+               <font>
+                <bold>true</bold>
+               </font>
+              </property>
+              <property name="text">
+               <string>파지력 상태</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="forceStatusLabel">
+              <property name="font">
+               <font>
+                <pointsize>11</pointsize>
+                <bold>true</bold>
+               </font>
+              </property>
+              <property name="text">
+               <string>판정 대기</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignmentFlag::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item row="0" column="2">
+       <widget class="QFrame" name="card">
+        <property name="minimumSize">
+         <size>
+          <width>300</width>
+          <height>170</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>300</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <layout class="QVBoxLayout" name="measurementInfoLayout">
+         <item>
+          <widget class="QLabel" name="sectionTitle">
+           <property name="text">
+            <string>측정 정보</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <layout class="QFormLayout" name="measurementInfoForm">
+           <item row="0" column="0">
+            <widget class="QLabel" name="timeTitle">
+             <property name="text">
+              <string>측정 시간</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QLabel" name="measurementTimeLabel">
+             <property name="text">
+              <string>00:00.0</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="samplingTitle">
+             <property name="text">
+              <string>샘플링 속도</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QLabel" name="samplingRateLabel">
+             <property name="text">
+              <string>0 Hz</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="stateTitle">
+             <property name="text">
+              <string>상태</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QLabel" name="measurementStateLabel">
+             <property name="text">
+              <string>연결 대기</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <widget class="QLabel" name="forceRangeTitle">
+             <property name="text">
+              <string>적정 범위</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="1">
+            <widget class="QLabel" name="forceRangeLabel">
+             <property name="text">
+              <string>미설정</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QFrame" name="card">
+        <property name="minimumSize">
+         <size>
+          <width>280</width>
+          <height>380</height>
+         </size>
+        </property>
+        <layout class="QVBoxLayout" name="loadCellLayout">
+         <item>
+          <widget class="QLabel" name="sectionTitle">
+           <property name="text">
+            <string>통신 상태</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <layout class="QFormLayout" name="loadCellForm">
+           <item row="0" column="0">
+            <widget class="QLabel" name="jaw1Title">
+             <property name="text">
+              <string>PC ↔ ESP32</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QLabel" name="pcEspStatusLabel">
+             <property name="text">
+              <string>미연결</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="jaw2Title">
+             <property name="text">
+              <string>Serial Port</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QLabel" name="serialPortStatusLabel">
+             <property name="text">
+              <string>-</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="jaw3Title">
+             <property name="text">
+              <string>Handshake</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QLabel" name="handshakeStatusLabel">
+             <property name="text">
+              <string>대기</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <widget class="QLabel" name="sumTitle">
+             <property name="text">
+              <string>ADS1256 STATUS</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="1">
+            <widget class="QLabel" name="adcStatusLabel">
+             <property name="text">
+              <string>미수신</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <spacer name="loadCellSpacer">
+           <property name="orientation">
+            <enum>Qt::Orientation::Vertical</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <widget class="QLabel" name="loadCellNote">
+           <property name="styleSheet">
+            <string notr="true">color:#8b929b;</string>
+           </property>
+           <property name="text">
+            <string>실시간 통신 상태를 표시합니다.</string>
+           </property>
+           <property name="wordWrap">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QFrame" name="card">
+        <property name="minimumSize">
+         <size>
+          <width>550</width>
+          <height>380</height>
+         </size>
+        </property>
+        <layout class="QVBoxLayout" name="graphCardLayout">
+         <item>
+          <layout class="QHBoxLayout" name="graphHeaderLayout">
+           <item>
+            <widget class="QLabel" name="sectionTitle">
+             <property name="text">
+              <string>실시간 파지력</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="graphHeaderSpacer">
+             <property name="orientation">
+              <enum>Qt::Orientation::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item>
+            <widget class="QLabel" name="graphRangeLabel">
+             <property name="styleSheet">
+              <string notr="true">color:#777f88;</string>
+             </property>
+             <property name="text">
+              <string>최근 10초</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <widget class="QWidget" name="graphContainer" native="true">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>260</height>
+            </size>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">background:#fbfcfd;border:1px solid #e1e5ea;border-radius:6px;</string>
+           </property>
+           <layout class="QVBoxLayout" name="graphContainerLayout">
+            <property name="leftMargin">
+             <number>4</number>
+            </property>
+            <property name="topMargin">
+             <number>4</number>
+            </property>
+            <property name="rightMargin">
+             <number>4</number>
+            </property>
+            <property name="bottomMargin">
+             <number>4</number>
+            </property>
+            <item>
+             <widget class="QLabel" name="graphHint">
+              <property name="text">
+               <string>여기에 pyqtgraph 실시간 그래프가 표시됩니다.</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignmentFlag::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="graphLegendLayout">
+           <item>
+            <widget class="QLabel" name="jaw1Legend">
+             <property name="text">
+              <string>● Jaw 1</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="jaw2Legend">
+             <property name="text">
+              <string>● Jaw 2</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="jaw3Legend">
+             <property name="text">
+              <string>● Jaw 3</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="totalLegend">
+             <property name="text">
+              <string>● 합계</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="legendSpacer">
+             <property name="orientation">
+              <enum>Qt::Orientation::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>0</width>
+               <height>0</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item row="1" column="2">
+       <widget class="QFrame" name="card">
+        <property name="minimumSize">
+         <size>
+          <width>300</width>
+          <height>380</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>300</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <layout class="QVBoxLayout" name="quickActionLayout">
+         <item>
+          <widget class="QLabel" name="sectionTitle">
+           <property name="text">
+            <string>빠른 실행</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="zeroButton">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>52</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>◎  영점 설정</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="modeButton">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>52</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>⚙  모드 설정</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="startButton">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>52</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>▶  측정 시작</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="stopButton">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>52</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>■  측정 종료</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="operationStateLabel">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>42</height>
+            </size>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">background:#eef8f1;border:1px solid #b7d9c0;border-radius:6px;color:#258642;font-weight:bold;</string>
+           </property>
+           <property name="text">
+            <string>●  통신 대기</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignmentFlag::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item row="2" column="0" colspan="2">
+       <widget class="QFrame" name="card">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>240</height>
+         </size>
+        </property>
+        <layout class="QVBoxLayout" name="sessionLayout">
+         <item>
+          <widget class="QLabel" name="sectionTitle">
+           <property name="text">
+            <string>시리얼 모니터</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QTableWidget" name="sessionTable">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>170</height>
+            </size>
+           </property>
+           <property name="rowCount">
+            <number>0</number>
+           </property>
+           <property name="columnCount">
+            <number>8</number>
+           </property>
+           <attribute name="horizontalHeaderDefaultSectionSize">
+            <number>120</number>
+           </attribute>
+           <attribute name="horizontalHeaderStretchLastSection">
+            <bool>true</bool>
+           </attribute>
+           <attribute name="verticalHeaderVisible">
+            <bool>false</bool>
+           </attribute>
+           <column>
+            <property name="text">
+             <string>시간</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Jaw1 RAW</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Jaw1(N)</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Jaw2 RAW</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Jaw2(N)</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Jaw3 RAW</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Jaw3(N)</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>최종 파지력(N)</string>
+            </property>
+           </column>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item row="2" column="2">
+       <widget class="QFrame" name="card">
+        <property name="minimumSize">
+         <size>
+          <width>300</width>
+          <height>240</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>300</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <layout class="QVBoxLayout" name="memoLayout">
+         <item>
+          <widget class="QLabel" name="sectionTitle">
+           <property name="text">
+            <string>세션 메모</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QTextEdit" name="memoTextEdit">
+           <property name="placeholderText">
+            <string>메모를 입력하세요...</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="memoSaveButton">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>42</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>저장</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+     </layout>
+    </item>
+   </layout>
   </widget>
-  <widget class="QStatusBar" name="statusbar"/>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1536</width>
+     <height>33</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>파일(F)</string>
+    </property>
+   </widget>
+   <widget class="QMenu" name="menuMeasurement">
+    <property name="title">
+     <string>측정(M)</string>
+    </property>
+   </widget>
+   <widget class="QMenu" name="menuSettings">
+    <property name="title">
+     <string>설정(S)</string>
+    </property>
+    <addaction name="actionConnectionSettings"/>
+   </widget>
+   <widget class="QMenu" name="menuData">
+    <property name="title">
+     <string>데이터(D)</string>
+    </property>
+   </widget>
+   <widget class="QMenu" name="menuHelp">
+    <property name="title">
+     <string>도움말(H)</string>
+    </property>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuMeasurement"/>
+   <addaction name="menuSettings"/>
+   <addaction name="menuData"/>
+   <addaction name="menuHelp"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar">
+   <property name="sizeGripEnabled">
+    <bool>true</bool>
+   </property>
+  </widget>
+  <action name="actionConnectionSettings">
+   <property name="text">
+    <string>통신 연결 설정</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>

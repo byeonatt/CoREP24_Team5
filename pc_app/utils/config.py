@@ -23,7 +23,7 @@ class Config:
         self.config_path = self.project_root / "config.json"
         self.config = self._load_config()
         self.current_grip_id = 0
-        self.current_session_id = self.config["last_session_id"]
+        self.current_session_id = None
 
     def _load_config(self) -> dict:
         if not self.config_path.exists():
@@ -78,18 +78,36 @@ class Config:
     
     # session_id 관리
     def create_new_session(self) -> int:
-
         self.current_grip_id = 0
-        self.config["last_session_id"] += 1
-        self.current_session_id = self.config["last_session_id"]
+        session_id = self.get_session_id()
+        self.current_session_id = session_id
+        self.config["last_session_id"] = session_id
         self.save()
 
-        self.get_save_directory().mkdir(parents=True, exist_ok=True)
+        session_directory = (self.get_base_directory() / f"Session{session_id:03d}")
+        session_directory.mkdir(parents=True, exist_ok=True)
 
-        return self.config["last_session_id"]
+        return session_id
     
     def get_session_id(self) -> int:
-        return self.current_session_id
+
+        if self.current_session_id is not None:
+            return self.current_session_id
+        
+        last_session_id = self.config.get("last_session_id", 0)
+
+        if last_session_id <= 0:
+            return 1
+
+        base_directory = self.get_base_directory()
+        last_session_path = (base_directory / f"Session{last_session_id:03d}")
+
+        grip_files = list(last_session_path.glob("G*.csv"))
+
+        if not grip_files:
+            return last_session_id
+
+        return last_session_id + 1
 
     # -------------------------
     # Getter
