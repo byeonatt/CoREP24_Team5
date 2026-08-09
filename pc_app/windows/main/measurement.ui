@@ -717,16 +717,6 @@ QStatusBar {
             <property name="bottomMargin">
              <number>4</number>
             </property>
-            <item>
-             <widget class="QLabel" name="graphHint">
-              <property name="text">
-               <string>여기에 pyqtgraph 실시간 그래프가 표시됩니다.</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignmentFlag::AlignCenter</set>
-              </property>
-             </widget>
-            </item>
            </layout>
           </widget>
          </item>

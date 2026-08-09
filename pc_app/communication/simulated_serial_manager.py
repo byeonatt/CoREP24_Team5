@@ -76,6 +76,27 @@ class SimulatedSerialManager(QObject):
             self._emit_force_packet
         )
 
+        self.calibration = {
+            "LC1": {
+                "tare": -12500.0,
+                "od": 0.000200,
+                "id2": 0.000200,
+                "id3": 0.000200,
+            },
+            "LC2": {
+                "tare": -12000.0,
+                "od": 0.000200,
+                "id2": 0.000200,
+                "id3": 0.000200,
+            },
+            "LC3": {
+                "tare": -13000.0,
+                "od": 0.000200,
+                "id2": 0.000200,
+                "id3": 0.000200,
+            },
+        }
+
     # ---------------------------------------------------------
     # 장치 검색
     # ---------------------------------------------------------
@@ -219,7 +240,7 @@ class SimulatedSerialManager(QObject):
             return True
 
         if message.startswith("CMD,CAL_SET"):
-            return True
+            return self._handle_cal_set(message)
 
         # 현재 시뮬레이터에서는 알 수 없는 명령도
         # Serial write 자체는 성공한 것으로 처리
@@ -341,17 +362,82 @@ class SimulatedSerialManager(QObject):
     # ---------------------------------------------------------
 
     def _emit_default_calibration(self):
+
         if not self.connected:
             return
 
-        packets = [
-            "CAL_GET,LC1,-12500,0.000200,0.000200,0.000200",
-            "CAL_GET,LC2,-12000,0.000200,0.000200,0.000200",
-            "CAL_GET,LC3,-13000,0.000200,0.000200,0.000200",
-        ]
+        packets = []
+
+        for lc in ("LC1", "LC2", "LC3"):
+
+            values = self.calibration[lc]
+
+            packet = (
+                f"CAL_GET,"
+                f"{lc},"
+                f"{values['tare']},"
+                f"{values['od']},"
+                f"{values['id2']},"
+                f"{values['id3']}"
+            )
+
+            packets.append(packet)
 
         for index, packet in enumerate(packets):
+
             QTimer.singleShot(
                 20 * index,
-                lambda p=packet: self.line_received.emit(p),
+                lambda p=packet:
+                    self.line_received.emit(p)
             )
+
+    def _handle_cal_set(self, message):
+
+        try:
+            parts = [
+                value.strip()
+                for value in message.split(",")
+            ]
+
+            # CMD,CAL_SET + 12개 숫자
+            if len(parts) != 14:
+                self.error_occurred.emit(
+                    "Simulator CAL_SET 형식 오류"
+                )
+                return False
+
+            values = [
+                float(value)
+                for value in parts[2:]
+            ]
+
+            self.calibration["LC1"] = {
+                "tare": values[0],
+                "od": values[1],
+                "id2": values[2],
+                "id3": values[3],
+            }
+
+            self.calibration["LC2"] = {
+                "tare": values[4],
+                "od": values[5],
+                "id2": values[6],
+                "id3": values[7],
+            }
+
+            self.calibration["LC3"] = {
+                "tare": values[8],
+                "od": values[9],
+                "id2": values[10],
+                "id3": values[11],
+            }
+
+            return True
+
+        except ValueError:
+
+            self.error_occurred.emit(
+                "Simulator CAL_SET 숫자 변환 오류"
+            )
+
+            return False

@@ -113,3 +113,20 @@ def parse_packet(line: str):
 # MCU로 전송할 명령 생성
 def create_command(command: Command) -> str:
     return f"CMD,{command.value}"
+
+def create_cal_set_command(
+        tare1, od_f1, id2_f1, id3_f1,
+        tare2, od_f2, id2_f2, id3_f2,
+        tare3, od_f3, id2_f3, id3_f3
+    ) -> str:
+
+        values = [
+            tare1, od_f1, id2_f1, id3_f1,
+            tare2, od_f2, id2_f2, id3_f2,
+            tare3, od_f3, id2_f3, id3_f3,
+        ]
+
+        return (
+            "CMD,CAL_SET,"
+            + ",".join(str(value) for value in values)
+        )

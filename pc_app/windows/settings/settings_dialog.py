@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QFileDialog, QMessageBox
 from PySide6.QtUiTools import QUiLoader
-from PySide6.QtCore import QFile, QIODevice
+from PySide6.QtCore import QFile, QIODevice, Qt
 from pathlib import Path
 
 from communication.serial_manager import SerialManager
@@ -24,6 +24,9 @@ class SettingsDialog:
         self.dialog = QUiLoader().load(ui_file)
         ui_file.close()
         self.dialog.setWindowTitle("Settings")
+
+        self.dialog.setWindowFlag(Qt.WindowMaximizeButtonHint, False)
+        self.dialog.setFixedSize(self.dialog.size())
 
         if self.measure_mode == "MODE_OD":
             self.dialog.radioButton_1.setChecked(True)

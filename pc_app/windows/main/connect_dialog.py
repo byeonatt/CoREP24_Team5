@@ -4,7 +4,7 @@ import threading
 
 from PySide6.QtWidgets import QDialog, QMessageBox
 from PySide6.QtUiTools import QUiLoader
-from PySide6.QtCore import QFile, QIODevice, QObject, Signal
+from PySide6.QtCore import QFile, QIODevice, QObject, Signal, Qt
 from pathlib import Path
 
 from windows.main.loading_dialog import LoadingDialog
@@ -26,6 +26,9 @@ class ConnectDialog:
         
         self.dialog = QUiLoader().load(ui_file)
         ui_file.close()
+
+        self.dialog.setWindowFlag(Qt.WindowMaximizeButtonHint, False)
+        self.dialog.setFixedSize(self.dialog.size())
 
         self.usb_scan_signals = UsbScanSignals()
         self.usb_scan_signals.finished.connect(self.add_usb_candidates)

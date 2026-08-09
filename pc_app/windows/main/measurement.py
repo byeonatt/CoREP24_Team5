@@ -9,6 +9,7 @@ from data_manager.csv_manager import CSVManager
 from windows.main.connect_dialog import ConnectDialog
 from windows.settings.settings_dialog import SettingsDialog
 from windows.calibration.calibration_window import CalibrationWindow
+from windows.main.realtime_force_graph import RealtimeForceGraph
 
 from communication.protocol import (
     parse_packet,
@@ -53,9 +54,12 @@ class MeasurementWindow(QMainWindow):
         self.rate_start_time = None
 
         self.zero_in_progress = False
-        self.zero_samples = []
-        self.zero_check_sample_count = 10
+        self.zero_ignore_frames = 5
+        self.zero_ignore_count = 0
+        self.zero_samples = {"lc1": [], "lc2": [], "lc3": []}
+        self.zero_check_sample_count = 20
         self.zero_tolerance = 0.05
+        self.zero_stability_tolerance = 0.03
 
         # ui 로드
         ui_path = Path(__file__).parent / "measurement.ui"
@@ -70,6 +74,9 @@ class MeasurementWindow(QMainWindow):
         self.setCentralWidget(self.ui)
         self.resize(self.ui.size())
         self.setWindowTitle("Measurement")
+        # 실시간 Force 그래프
+        self.force_graph = RealtimeForceGraph(self.ui.graphContainer)
+        self.force_graph.set_mode(None)
         
 
         self.handshake_timer = QTimer(self)
@@ -266,6 +273,7 @@ class MeasurementWindow(QMainWindow):
             self.force_sum = 0.0
             self.sample_count = 0
             self.rate_sample_count = 0
+            self.force_graph.start()
 
             now = time.monotonic()
             self.measurement_start_time = now
@@ -294,6 +302,7 @@ class MeasurementWindow(QMainWindow):
         if not self.is_measuring:
             return
         self.is_measuring = False
+        self.force_graph.stop()
         self.measurement_timer.stop()
 
         self.ui.measurementStateLabel.setText("측정 완료")
@@ -395,6 +404,9 @@ class MeasurementWindow(QMainWindow):
                 "측정 중에는 영점을 설정할 수 없습니다."
             )
             return
+        if self.zero_in_progress:
+            return
+        
         if self.last_force_data is None:
             QMessageBox.warning(
                 self,
@@ -427,7 +439,8 @@ class MeasurementWindow(QMainWindow):
             return
 
         self.zero_in_progress = True
-        self.zero_samples.clear()
+        self.zero_ignore_count = 0
+        self.zero_samples = {"lc1": [], "lc2": [], "lc3": []}
         self.ui.operationStateLabel.setText("●  영점 설정 확인 중")
         self.update_button_state()
 
@@ -461,6 +474,7 @@ class MeasurementWindow(QMainWindow):
         else:
             text = "미설정"
         self.ui.modeValueLabel.setText(text)
+        self.force_graph.set_mode(self.measure_mode)
         self.ui.modeButton.setToolTip(f"현재 측정 모드: {text}")
 
     def close_application(self):
@@ -512,6 +526,8 @@ class MeasurementWindow(QMainWindow):
             self.ui.pcEspStatusLabel.setText("정상") # 통신 상태 정상 확인
             self.update_force_display(data) # 실시간 파지력
             self.update_serial_monitor(data) # 시리얼 모니터 갱신
+            if self.is_measuring:
+                self.force_graph.add_data(data)
 
             return
 
@@ -627,11 +643,17 @@ class MeasurementWindow(QMainWindow):
 
     def check_zero_result(self, data):
 
-        if not self.zero_in_progress: return
+        if not self.zero_in_progress:
+            return
+        
         if not data.status_ok:
             self.zero_in_progress = False
+            self.zero_ignore_count = 0
+            self.zero_samples = {"lc1": [], "lc2": [], "lc3": []}
             self.ui.operationStateLabel.setText("●  영점 설정 실패")
+
             self.update_button_state()
+
             QMessageBox.warning(
                 self,
                 "영점 설정 실패",
@@ -639,32 +661,81 @@ class MeasurementWindow(QMainWindow):
             )
             return
 
-        self.zero_samples.append(data.total_force)
+        if self.zero_ignore_count < self.zero_ignore_frames:
+            self.zero_ignore_count += 1
+            return
+
+        self.zero_samples["lc1"].append(data.force_lc1)
+        self.zero_samples["lc2"].append(data.force_lc2)
+        self.zero_samples["lc3"].append(data.force_lc3)
+
         if (
-            len(self.zero_samples)
+            len(self.zero_samples["lc1"])
             < self.zero_check_sample_count
         ):
             return
 
-        max_abs_force = max(abs(value) for value in self.zero_samples)
-        self.zero_in_progress = False
+        active_cells = self.get_active_load_cells()
+        if not active_cells:
+            self.zero_in_progress = False
+            self.ui.operationStateLabel.setText("●  영점 설정 실패")
+            self.update_button_state()
+            QMessageBox.warning(
+                self,
+                "영점 설정 실패",
+                "측정 모드가 설정되어 있지 않습니다."
+            )
+            return
 
-        if max_abs_force <= self.zero_tolerance:
+        success = True
+        result_lines = []
+
+        for lc in active_cells:
+            samples = self.zero_samples[lc]
+            mean_value = (sum(samples) / len(samples))
+            peak_to_peak = (max(samples) - min(samples))
+            mean_ok = (abs(mean_value) <= self.zero_tolerance)
+            stability_ok = (peak_to_peak <= self.zero_stability_tolerance)
+
+            if not (mean_ok and stability_ok):
+                success = False
+
+            result_lines.append(
+                f"{lc.upper()} : "
+                f"평균 {mean_value:.3f} N / "
+                f"변동 {peak_to_peak:.3f} N"
+            )
+
+        result_text = "\n".join(result_lines)
+
+        self.zero_in_progress = False
+        self.zero_ignore_count = 0
+        self.zero_samples = {"lc1": [], "lc2": [], "lc3": []}
+
+        if success:
             self.ui.operationStateLabel.setText("●  영점 설정 완료")
             QMessageBox.information(
                 self,
-                "영점 설정",
-                "영점 설정이 완료되었습니다."
+                "영점 설정 완료",
+                "영점 설정이 완료되었습니다.\n\n"
+                + result_text
             )
-
         else:
             self.ui.operationStateLabel.setText("●  영점 설정 불안정")
             QMessageBox.warning(
                 self,
                 "영점 설정 확인",
-                "영점 설정 후 측정값이 "
-                "허용 범위 안으로 안정되지 않았습니다.\n\n"
-                f"최대 편차: {max_abs_force:.3f} N"
+                "영점 설정 후 일부 로드셀 값이 "
+                "허용 범위 안에서 안정되지 않았습니다.\n\n"
+                + result_text
             )
-        self.zero_samples.clear()
         self.update_button_state()
+
+    def get_active_load_cells(self):
+        if self.measure_mode == "MODE_OD":
+            return ["lc1", "lc2"]
+        elif self.measure_mode == "MODE_ID_2":
+            return ["lc1", "lc2"]
+        elif self.measure_mode == "MODE_ID_3":
+            return ["lc1", "lc2", "lc3"]
+        return []
