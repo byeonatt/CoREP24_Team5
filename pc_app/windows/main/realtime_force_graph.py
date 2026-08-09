@@ -32,6 +32,42 @@ class RealtimeForceGraph:
         self.start_time = None
         self.running = False
 
+        # =====================================================
+        # Y-axis Auto Range
+        # =====================================================
+
+        # 그래프에 표시하는 최근 시간
+        self.display_window_seconds = 10.0
+
+        # 새 측정 시작 시 기본 Y축
+        self.default_y_min = -0.5
+        self.default_y_max = 1.0
+
+        # Y축이 이것보다 좁아지지 않도록 함
+        self.min_y_span = 1.0
+
+        # 데이터 위/아래 여백
+        self.y_margin_ratio = 0.15
+        self.y_margin_abs = 0.10
+
+        # 값이 작아진 뒤 Y축 축소를 시작하기까지 대기시간
+        self.y_shrink_delay = 5.0
+
+        # Y축 축소 계산 간격
+        self.y_shrink_interval = 0.5
+
+        # 한 번 축소할 때 목표 범위로 이동하는 비율
+        # 0.20 = 한 번에 20%
+        self.y_shrink_ratio = 0.20
+
+        # 현재 Y축 범위
+        self.current_y_min = self.default_y_min
+        self.current_y_max = self.default_y_max
+
+        # 축소 대기 상태
+        self.y_shrink_candidate_since = None
+        self.last_y_shrink_time = time.monotonic()
+
 
         # =============================================
         # PlotWidget 생성
@@ -117,7 +153,7 @@ class RealtimeForceGraph:
 
         self.plot_widget.setMouseEnabled(
             x=True,
-            y=True
+            y=False
         )
 
 
@@ -174,8 +210,8 @@ class RealtimeForceGraph:
         )
 
         self.plot_widget.setYRange(
-            -1,
-            5,
+            self.default_y_min,
+            self.default_y_max,
             padding=0
         )
 
@@ -223,6 +259,19 @@ class RealtimeForceGraph:
         self.lc3_curve.setData([], [])
         self.total_curve.setData([], [])
 
+        # Y축 상태 초기화
+        self.current_y_min = self.default_y_min
+        self.current_y_max = self.default_y_max
+
+        self.y_shrink_candidate_since = None
+        self.last_y_shrink_time = time.monotonic()
+
+        self.plot_widget.setYRange(
+            self.current_y_min,
+            self.current_y_max,
+            padding=0
+        )
+
 
     def add_data(self, data):
 
@@ -269,12 +318,11 @@ class RealtimeForceGraph:
         self.total_curve.setData(x, list(self.total_data))
 
         latest_time = x[-1]
-        window_seconds = 10.0
 
-        if latest_time > window_seconds:
+        if latest_time > self.display_window_seconds:
 
             self.plot_widget.setXRange(
-                latest_time - window_seconds,
+                latest_time - self.display_window_seconds,
                 latest_time,
                 padding=0
             )
@@ -283,9 +331,10 @@ class RealtimeForceGraph:
 
             self.plot_widget.setXRange(
                 0,
-                window_seconds,
+                self.display_window_seconds,
                 padding=0
             )
+        self.update_y_range()
 
     def set_mode(self, mode):
 
@@ -334,3 +383,212 @@ class RealtimeForceGraph:
             self.lc2_curve.setVisible(False)
             self.lc3_curve.setVisible(False)
             self.total_curve.setVisible(True)
+
+    def get_visible_force_values(self):
+
+        if not self.time_data:
+            return []
+
+        times = list(self.time_data)
+        latest_time = times[-1]
+        cutoff = (latest_time - self.display_window_seconds)
+
+        # 최근 10초가 시작되는 index 찾기
+        start_index = 0
+
+        for index, timestamp in enumerate(times):
+
+            if timestamp >= cutoff:
+                start_index = index
+                break
+
+        values = []
+
+        if self.lc1_curve.isVisible():
+            values.extend(list(self.lc1_data)[start_index:])
+        if self.lc2_curve.isVisible():
+            values.extend(list(self.lc2_data)[start_index:])
+        if self.lc3_curve.isVisible():
+            values.extend(list(self.lc3_data)[start_index:])
+        if self.total_curve.isVisible():
+            values.extend(list(self.total_data)[start_index:])
+
+        return values
+
+    def calculate_target_y_range(self):
+
+        values = self.get_visible_force_values()
+
+        if not values:
+            return (
+                self.default_y_min,
+                self.default_y_max
+            )
+
+        data_min = min(values)
+        data_max = max(values)
+
+        # 0 N 기준선도 화면에 포함
+        base_min = min(
+            data_min,
+            0.0
+        )
+
+        base_max = max(
+            data_max,
+            0.0
+        )
+
+        raw_span = (
+            base_max
+            - base_min
+        )
+
+        # 여백 계산에 사용할 span
+        margin_span = max(
+            raw_span,
+            self.min_y_span
+        )
+
+        margin = max(
+            margin_span * self.y_margin_ratio,
+            self.y_margin_abs
+        )
+
+        target_min = (
+            base_min
+            - margin
+        )
+
+        target_max = (
+            base_max
+            + margin
+        )
+
+
+        # -----------------------------------------
+        # 최소 Y축 폭 보장
+        # -----------------------------------------
+
+        target_span = (
+            target_max
+            - target_min
+        )
+
+        if target_span < self.min_y_span:
+
+            center = (
+                target_min
+                + target_max
+            ) / 2.0
+
+            half_span = (
+                self.min_y_span
+                / 2.0
+            )
+
+            target_min = (
+                center
+                - half_span
+            )
+
+            target_max = (
+                center
+                + half_span
+            )
+
+        return (
+            target_min,
+            target_max
+        )
+
+    def update_y_range(self):
+
+        if not self.time_data:
+            return
+
+        now = time.monotonic()
+
+        target_min, target_max = (self.calculate_target_y_range())
+
+        expand_lower = (
+            target_min
+            < self.current_y_min
+        )
+
+        expand_upper = (
+            target_max
+            > self.current_y_max
+        )
+
+        if expand_lower or expand_upper:
+
+            if expand_lower:
+                self.current_y_min = target_min
+
+            if expand_upper:
+                self.current_y_max = target_max
+
+            self.plot_widget.setYRange(
+                self.current_y_min,
+                self.current_y_max,
+                padding=0
+            )
+            self.y_shrink_candidate_since = None
+            return
+
+
+        if self.y_shrink_candidate_since is None:
+            self.y_shrink_candidate_since = now
+            return
+
+        stable_time = (
+            now
+            - self.y_shrink_candidate_since
+        )
+
+        if stable_time < self.y_shrink_delay:
+            return
+
+        if (
+            now
+            - self.last_y_shrink_time
+            < self.y_shrink_interval
+        ):
+            return
+
+        self.last_y_shrink_time = now
+
+
+        self.current_y_min += (
+            target_min
+            - self.current_y_min
+        ) * self.y_shrink_ratio
+
+        self.current_y_max += (
+            target_max
+            - self.current_y_max
+        ) * self.y_shrink_ratio
+
+
+        if abs(
+            self.current_y_min
+            - target_min
+        ) < 0.01:
+
+            self.current_y_min = target_min
+
+
+        if abs(
+            self.current_y_max
+            - target_max
+        ) < 0.01:
+
+            self.current_y_max = target_max
+
+
+        self.plot_widget.setYRange(
+            self.current_y_min,
+            self.current_y_max,
+            padding=0
+        )

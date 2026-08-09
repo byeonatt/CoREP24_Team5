@@ -4,6 +4,7 @@ from PySide6.QtWidgets import QMainWindow, QMessageBox, QInputDialog, QTableWidg
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtCore import QFile, QIODevice, QTimer
 from pathlib import Path
+from collections import deque
 
 from data_manager.csv_manager import CSVManager
 from windows.main.connect_dialog import ConnectDialog
@@ -45,6 +46,13 @@ class MeasurementWindow(QMainWindow):
         self.current_csv = None
         self.measure_mode = None
         self.device_ready = False
+
+        self.max_measurement_seconds = 60 * 60
+        self.inactivity_window_seconds = 5 * 60
+        self.inactivity_threshold_n = 0.25
+        self.inactivity_sample_interval = 1.0
+        self.inactivity_samples = deque()
+        self.last_inactivity_sample_time = None
 
         self.last_force_data = None
         self.last_force_packet_time = None
@@ -90,6 +98,10 @@ class MeasurementWindow(QMainWindow):
         self.measurement_timer = QTimer(self)
         self.measurement_timer.setInterval(100)
         self.measurement_timer.timeout.connect(self.update_measurement_time)
+
+        self.measurement_safety_timer = QTimer(self)
+        self.measurement_safety_timer.setInterval(1000)
+        self.measurement_safety_timer.timeout.connect(self.check_measurement_safety)
 
         self.test_display()
         self.ui.startButton.setEnabled(False)
@@ -286,6 +298,8 @@ class MeasurementWindow(QMainWindow):
             self.ui.samplingRateLabel.setText("0 Hz")
             self.ui.measurementStateLabel.setText("측정 중")
 
+            self.reset_measurement_safety_state()
+            self.measurement_safety_timer.start()
             self.measurement_timer.start()
             self.update_button_state()
 
@@ -302,12 +316,17 @@ class MeasurementWindow(QMainWindow):
         if not self.is_measuring:
             return
         self.is_measuring = False
+        if self.measurement_safety_timer.isActive():
+            self.measurement_safety_timer.stop()
+        self.reset_measurement_safety_state()
+
         self.force_graph.stop()
-        self.measurement_timer.stop()
+        if self.measurement_timer.isActive():
+            self.measurement_timer.stop()
 
         self.ui.measurementStateLabel.setText("측정 완료")
-        self.update_button_state()
         self.close_current_csv()
+        self.update_button_state()
 
     def close_current_csv(self):
         if self.current_csv is None: return
@@ -522,6 +541,7 @@ class MeasurementWindow(QMainWindow):
                     mode=self.measure_mode,
                     data=data
                 )
+                self.update_inactivity_monitor(data)
 
             self.ui.pcEspStatusLabel.setText("정상") # 통신 상태 정상 확인
             self.update_force_display(data) # 실시간 파지력
@@ -567,7 +587,12 @@ class MeasurementWindow(QMainWindow):
 
             if self.is_measuring:
                 self.is_measuring = False
-                self.measurement_timer.stop()
+                if self.measurement_timer.isActive():
+                    self.measurement_timer.stop()
+                if self.measurement_safety_timer.isActive():
+                    self.measurement_safety_timer.stop()
+                self.reset_measurement_safety_state()
+                self.force_graph.stop()
                 self.close_current_csv()
 
                 self.ui.measurementStateLabel.setText("통신 오류로 측정 중단")
@@ -739,3 +764,107 @@ class MeasurementWindow(QMainWindow):
         elif self.measure_mode == "MODE_ID_3":
             return ["lc1", "lc2", "lc3"]
         return []
+
+    def reset_measurement_safety_state(self):
+        self.inactivity_samples.clear()
+        self.last_inactivity_sample_time = None
+
+    def update_inactivity_monitor(self, data):
+        if not self.is_measuring: return
+        now = time.monotonic()
+
+        if self.last_inactivity_sample_time is not None:
+            elapsed = (now - self.last_inactivity_sample_time)
+            if elapsed < self.inactivity_sample_interval:
+                return
+        self.last_inactivity_sample_time = now
+
+        total_force = float(data.total_force)
+        self.inactivity_samples.append((now, total_force))
+
+        cutoff = (now - self.inactivity_window_seconds)
+        while (
+            self.inactivity_samples
+            and
+            self.inactivity_samples[0][0] < cutoff
+        ):
+            self.inactivity_samples.popleft()
+
+    def check_measurement_safety(self):
+        if not self.is_measuring:
+            return
+        if self.measurement_start_time is None:
+            return
+
+        now = time.monotonic()
+        elapsed = (now - self.measurement_start_time)
+
+        if elapsed >= self.max_measurement_seconds:
+            self.auto_stop_measurement(reason="max_time")
+            return
+
+        if elapsed < self.inactivity_window_seconds:
+            return
+
+        if len(self.inactivity_samples) < 2:
+            return
+
+        cutoff = (now - self.inactivity_window_seconds)
+        while (
+            self.inactivity_samples
+            and
+            self.inactivity_samples[0][0] < cutoff
+        ):
+            self.inactivity_samples.popleft()
+
+        if len(self.inactivity_samples) < 2:
+            return
+
+        oldest_time = (self.inactivity_samples[0][0])
+        coverage = (now - oldest_time)
+
+        if coverage < (
+            self.inactivity_window_seconds
+            - 2.0
+        ):
+            return
+
+        forces = [force for _, force in self.inactivity_samples]
+        min_force = min(forces)
+        max_force = max(forces)
+        variation = (max_force - min_force)
+
+        if variation <= self.inactivity_threshold_n:
+            self.auto_stop_measurement(
+                reason="inactivity",
+                variation=variation
+            )
+
+    def auto_stop_measurement(self, reason, variation=None):
+        if not self.is_measuring:
+            return
+        
+        self.stop_measurement()
+
+        if reason == "max_time":
+            self.ui.operationStateLabel.setText("● 최대 측정시간 도달")
+            QMessageBox.information(
+                self,
+                "측정 자동 종료",
+                "최대 측정시간 60분에 도달하여\n"
+                "측정을 자동으로 종료했습니다."
+            )
+
+        elif reason == "inactivity":
+            self.ui.operationStateLabel.setText("● 무활동 자동 종료")
+            if variation is None:
+                variation = 0.0
+            QMessageBox.information(
+                self,
+                "측정 자동 종료",
+                "최근 5분 동안 유효한 힘 변화가 "
+                "감지되지 않아\n"
+                "측정을 자동으로 종료했습니다.\n\n"
+                f"최근 변화폭: {variation:.3f} N\n"
+                f"종료 기준: {self.inactivity_threshold_n:.3f} N"
+            )
