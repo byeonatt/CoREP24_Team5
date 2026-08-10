@@ -116,6 +116,14 @@ QLabel#forceRangeLabel {
     color: #555d66;
     font-weight: bold;
 }
+QLabel#gripCountLabel {
+    color: #1769d2;
+    font-weight: bold;
+}
+QLabel#judgementSummaryLabel {
+    color: #555d66;
+    font-weight: bold;
+}
 QLineEdit, QTextEdit, QTableWidget {
     background: white;
     border: 1px solid #d5d9df;
@@ -218,12 +226,12 @@ QStatusBar {
          </property>
          <property name="minimumSize">
           <size>
-           <width>110</width>
+           <width>120</width>
            <height>44</height>
           </size>
          </property>
          <property name="text">
-          <string>⚙  설정</string>
+          <string>⚙  연결 설정</string>
          </property>
         </widget>
        </item>
@@ -537,6 +545,34 @@ QStatusBar {
             <widget class="QLabel" name="forceRangeLabel">
              <property name="text">
               <string>미설정</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="0">
+            <widget class="QLabel" name="gripCountTitle">
+             <property name="text">
+              <string>검출 Grip</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="1">
+            <widget class="QLabel" name="gripCountLabel">
+             <property name="text">
+              <string>0</string>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="0">
+            <widget class="QLabel" name="judgementSummaryTitle">
+             <property name="text">
+              <string>판정 누적</string>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="1">
+            <widget class="QLabel" name="judgementSummaryLabel">
+             <property name="text">
+              <string>미적용</string>
              </property>
             </widget>
            </item>
@@ -1021,11 +1057,16 @@ QStatusBar {
      <string>설정(S)</string>
     </property>
     <addaction name="actionConnectionSettings"/>
+    <addaction name="actionJudgementSettings"/>
    </widget>
    <widget class="QMenu" name="menuData">
     <property name="title">
      <string>데이터(D)</string>
     </property>
+    <addaction name="actionDataManagement"/>
+    <addaction name="separator"/>
+    <addaction name="actionSaveDirectory"/>
+    <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -1046,6 +1087,21 @@ QStatusBar {
   <action name="actionConnectionSettings">
    <property name="text">
     <string>통신 연결 설정</string>
+   </property>
+  </action>
+  <action name="actionJudgementSettings">
+   <property name="text">
+    <string>판정 기준 설정</string>
+   </property>
+  </action>
+  <action name="actionDataManagement">
+   <property name="text">
+    <string>데이터 관리</string>
+   </property>
+  </action>
+  <action name="actionSaveDirectory">
+   <property name="text">
+    <string>저장 경로 지정</string>
    </property>
   </action>
  </widget>

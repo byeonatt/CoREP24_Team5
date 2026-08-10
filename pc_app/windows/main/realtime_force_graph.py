@@ -1,4 +1,5 @@
 from collections import deque
+from bisect import bisect_left, bisect_right
 import time
 
 import pyqtgraph as pg
@@ -31,6 +32,32 @@ class RealtimeForceGraph:
 
         self.start_time = None
         self.running = False
+
+        # =====================================================
+        # Local Peak Detection # Peak 관련은 여기를 수정
+        # =====================================================
+
+        # Peak 주변을 비교할 시간
+        # 앞뒤 0.15초
+        self.peak_neighborhood_seconds = 0.15
+
+        # 주변 값보다 최소 이만큼 높아야 Peak
+        self.peak_min_prominence = 0.15
+
+        # 아주 작은 힘의 노이즈는 Peak에서 제외
+        self.peak_min_force = 0.30
+
+        # Peak끼리 너무 가까우면 하나로 합침
+        self.peak_min_distance_seconds = 0.25
+
+        # 현재 그래프에 표시된 Peak
+        self.local_peaks = []
+
+        # Peak 라벨 TextItem 목록
+        self.peak_text_items = []
+
+        # 불필요하게 계속 그래픽을 다시 만들지 않기 위한 상태값
+        self.peak_signature = None
 
         # =====================================================
         # Y-axis Auto Range
@@ -201,6 +228,31 @@ class RealtimeForceGraph:
             )
         )
 
+        # =====================================================
+        # Local Peak Marker
+        # =====================================================
+
+        self.peak_scatter = pg.ScatterPlotItem(
+            size=10,
+            symbol="o",
+            pen=pg.mkPen(
+                "#B91C1C",
+                width=2
+            ),
+            brush=pg.mkBrush(
+                "#EF4444"
+            )
+        )
+
+        self.plot_widget.addItem(
+            self.peak_scatter
+        )
+
+        self.peak_scatter.setData(
+            [],
+            []
+        )
+
 
         # 처음부터 축이 확실히 보이도록 범위 설정
         self.plot_widget.setXRange(
@@ -272,6 +324,17 @@ class RealtimeForceGraph:
             padding=0
         )
 
+        self.local_peaks.clear()
+        self.peak_signature = None
+
+        self.peak_scatter.setData([], [])
+        for text_item in self.peak_text_items:
+
+            self.plot_widget.removeItem(
+                text_item
+            )
+        self.peak_text_items.clear()
+
 
     def add_data(self, data):
 
@@ -335,6 +398,7 @@ class RealtimeForceGraph:
                 padding=0
             )
         self.update_y_range()
+        self.update_local_peak_markers()
 
     def set_mode(self, mode):
 
@@ -592,3 +656,260 @@ class RealtimeForceGraph:
             self.current_y_max,
             padding=0
         )
+
+    def find_local_peaks(self):
+
+        if len(self.time_data) < 3:
+            return []
+
+        times = list(self.time_data)
+        forces = list(self.total_data)
+
+        if not times:
+            return []
+
+        latest_time = times[-1]
+
+        # 현재 화면에 보이는 최근 10초 정도만 분석
+        visible_start_time = max(
+            0.0,
+            latest_time - self.display_window_seconds
+        )
+
+        start_index = bisect_left(
+            times,
+            visible_start_time
+        )
+
+        candidates = []
+
+
+        # =================================================
+        # Local Maximum 탐색
+        # =================================================
+
+        for i in range(
+            max(start_index, 1),
+            len(times) - 1
+        ):
+
+            peak_time = times[i]
+            peak_force = forces[i]
+
+            if peak_force < self.peak_min_force:
+                continue
+
+            left_time = (
+                peak_time
+                - self.peak_neighborhood_seconds
+            )
+
+            right_time = (
+                peak_time
+                + self.peak_neighborhood_seconds
+            )
+
+            left_index = bisect_left(
+                times,
+                left_time
+            )
+
+            right_index = bisect_right(
+                times,
+                right_time
+            )
+
+
+            if right_time > latest_time:
+                continue
+
+            if left_index >= i:
+                continue
+
+            if right_index <= i + 1:
+                continue
+
+
+            left_values = forces[
+                left_index:i
+            ]
+
+            right_values = forces[
+                i + 1:right_index
+            ]
+
+            if not left_values or not right_values:
+                continue
+
+
+            surrounding_max = max(
+                max(left_values),
+                max(right_values)
+            )
+
+            if peak_force <= surrounding_max:
+                continue
+
+            left_base = min(
+                left_values
+            )
+
+            right_base = min(
+                right_values
+            )
+
+            baseline = max(
+                left_base,
+                right_base
+            )
+
+            prominence = (
+                peak_force
+                - baseline
+            )
+
+
+            if prominence < self.peak_min_prominence:
+                continue
+
+
+            candidates.append(
+                (
+                    peak_time,
+                    peak_force
+                )
+            )
+
+
+        filtered = []
+
+        for peak_time, peak_force in candidates:
+
+            if not filtered:
+
+                filtered.append(
+                    (
+                        peak_time,
+                        peak_force
+                    )
+                )
+
+                continue
+
+
+            previous_time, previous_force = (
+                filtered[-1]
+            )
+
+            distance = (
+                peak_time
+                - previous_time
+            )
+
+
+            # 충분히 떨어져 있으면 별개의 Grip Peak
+            if distance >= self.peak_min_distance_seconds:
+
+                filtered.append(
+                    (
+                        peak_time,
+                        peak_force
+                    )
+                )
+
+                continue
+
+
+            # 너무 가까운 Peak면 둘 중 높은 것만 유지
+            if peak_force > previous_force:
+
+                filtered[-1] = (
+                    peak_time,
+                    peak_force
+                )
+
+
+        return filtered
+
+    def update_local_peak_markers(self):
+
+        peaks = self.find_local_peaks()
+
+
+        # =================================================
+        # 이전 화면과 동일하면 아무것도 하지 않음
+        # =================================================
+
+        signature = tuple(
+            (
+                round(t, 3),
+                round(force, 3)
+            )
+            for t, force in peaks
+        )
+
+        if signature == self.peak_signature:
+            return
+
+        self.peak_signature = signature
+        self.local_peaks = peaks
+
+
+        # =================================================
+        # Scatter 점 갱신
+        # =================================================
+
+        if peaks:
+
+            x_values = [
+                t
+                for t, _
+                in peaks
+            ]
+
+            y_values = [
+                force
+                for _, force
+                in peaks
+            ]
+
+            self.peak_scatter.setData(
+                x_values,
+                y_values
+            )
+
+        else:
+
+            self.peak_scatter.setData(
+                [],
+                []
+            )
+
+        for text_item in self.peak_text_items:
+
+            self.plot_widget.removeItem(
+                text_item
+            )
+
+        self.peak_text_items.clear()
+
+        for peak_time, peak_force in peaks:
+
+            text = pg.TextItem(
+                text=f"{peak_force:.2f} N",
+                color="#B91C1C",
+                anchor=(0.5, 1.25)
+            )
+
+            text.setPos(
+                peak_time,
+                peak_force
+            )
+
+            self.plot_widget.addItem(
+                text
+            )
+
+            self.peak_text_items.append(
+                text
+            )

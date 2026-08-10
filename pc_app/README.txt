@@ -16,11 +16,6 @@ main.py를 실행하기 (경로: pc_app/main.py)
 
 
 
-[초기 저장 경로]
-
-C:/Users/User/Documents/GripForceData
-
-
 
 [MCU(ESP32) 내장 파일 생성 프롬프트]
 
@@ -96,3 +91,36 @@ device_ready = True
 ESP32 → F,RAW1,RAW2,RAW3,F1,F2,F3,STATUS
         ↓
 PC가 지속적으로 수신/파싱
+
+
+
+[초기 저장 경로]
+
+C:/Users/User/Documents/GripForceData
+
+
+
+[저장 데이터 구성]
+G0001.csv
+━━━━━━━━━━━━━━━━━━━━
+원본 데이터
+100 Hz
+수십만 행
+프로그램 분석 중심
+헤더 X
+
+
+G0001_events.csv
+━━━━━━━━━━━━━━━━━━━━
+실제 파지 이벤트 요약
+약 200행
+사람 + 프로그램 모두 사용
+헤더 O
+
+
+Session001.csv
+━━━━━━━━━━━━━━━━━━━━
+Measurement 단위 결과 요약
+몇 행 ~ 수십 행
+사람이 직접 확인하기 좋음
+헤더 O

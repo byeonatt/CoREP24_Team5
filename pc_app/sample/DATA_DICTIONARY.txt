@@ -1,0 +1,161 @@
+Grip Force Measurement - Data Dictionary
+
+1. Gxxxx.csv
+설명:
+- 한 번의 Measurement 동안 수집되는 100 Hz 원본 측정 데이터
+- 파일 자체에는 헤더를 저장하지 않음
+- 열 순서는 아래 정의를 따름
+
+열 정의:
+0. elapsed_time
+   - 단위: s
+   - 설명: 측정 시작 후 경과 시간
+
+1. mode
+   - 단위: -
+   - 설명: 측정 모드
+   - 값: MODE_OD / MODE_ID_2 / MODE_ID_3
+
+2. RAW_LC1
+   - 단위: count
+   - 설명: Load Cell 1의 ADS1256 RAW 값
+
+3. RAW_LC2
+   - 단위: count
+   - 설명: Load Cell 2의 ADS1256 RAW 값
+
+4. RAW_LC3
+   - 단위: count
+   - 설명: Load Cell 3의 ADS1256 RAW 값
+
+5. F_LC1
+   - 단위: N
+   - 설명: Load Cell 1의 변환 힘
+
+6. F_LC2
+   - 단위: N
+   - 설명: Load Cell 2의 변환 힘
+
+7. F_LC3
+   - 단위: N
+   - 설명: Load Cell 3의 변환 힘
+
+8. total_force
+   - 단위: N
+   - 설명: 전체 파지력
+
+9. STATUS
+   - 단위: hex
+   - 설명: ADS1256 STATUS 값
+   - 정상값: 0x36 또는 0x37
+
+
+2. Gxxxx_events.csv
+설명:
+- 한 번의 Measurement 안에서 검출된 실제 Grip Event 요약
+- 약 200회의 실제 파지 이벤트를 한 파일에 행 단위로 저장
+- 파일 자체에 헤더 포함
+
+헤더:
+event_id,start_time_s,peak_time_s,end_time_s,duration_s,peak_force_n
+
+필드 정의:
+event_id
+- 설명: 실제 파지 이벤트 순번
+
+start_time_s
+- 단위: s
+- 설명: Measurement 시작 기준 파지 시작 시점
+
+peak_time_s
+- 단위: s
+- 설명: 해당 파지에서 최대 힘이 발생한 시점
+
+end_time_s
+- 단위: s
+- 설명: 해당 파지 종료 시점
+
+duration_s
+- 단위: s
+- 설명: 파지 지속 시간
+
+peak_force_n
+- 단위: N
+- 설명: 해당 파지 이벤트의 최대 파지력
+
+
+3. SessionXXX.csv
+설명:
+- 하나의 Session 안에서 수행된 Measurement 단위 요약
+- Measurement 하나당 한 행 저장
+- 파일 자체에 헤더 포함
+
+헤더:
+measurement_id,timestamp,mode,duration_s,event_count,event_peak_min_n,event_peak_avg_n,event_peak_max_n,raw_peak_n,raw_average_n
+
+필드 정의:
+measurement_id
+- 설명: Measurement 순번
+- 현재 파일명 G0001.csv의 0001과 대응
+
+timestamp
+- 설명: Measurement 종료 시 저장되는 시각 정보
+
+mode
+- 설명: 측정 모드
+- 값: MODE_OD / MODE_ID_2 / MODE_ID_3
+
+duration_s
+- 단위: s
+- 설명: 해당 Measurement의 전체 측정 시간
+
+event_count
+- 단위: count
+- 설명: 해당 Measurement 안에서 검출된 실제 Grip Event 수
+
+event_peak_min_n
+- 단위: N
+- 설명: 검출된 Grip Event Peak 중 최소값
+
+event_peak_avg_n
+- 단위: N
+- 설명: 검출된 Grip Event Peak의 평균값
+
+event_peak_max_n
+- 단위: N
+- 설명: 검출된 Grip Event Peak 중 최대값
+
+raw_peak_n
+- 단위: N
+- 설명: Gxxxx.csv 전체 원본 데이터 기준 최대 Total Force
+
+raw_average_n
+- 단위: N
+- 설명: Gxxxx.csv 전체 원본 데이터 기준 평균 Total Force
+
+
+4. 파일 구조 예시
+
+Session001/
+├─ Session001.csv
+├─ G0001.csv
+├─ G0001_events.csv
+├─ G0002.csv
+└─ G0002_events.csv
+
+
+5. 파일 역할 요약
+
+SessionXXX.csv
+- Session 단위 Measurement 결과 요약
+- 사람이 빠르게 확인하기 위한 인덱스/요약 파일
+
+Gxxxx.csv
+- Measurement 전체 100 Hz 원본 데이터
+- 상세 재분석 및 그래프 복원용
+- 헤더 없음
+
+Gxxxx_events.csv
+- Measurement 안에서 검출된 실제 파지 이벤트 요약
+- 이벤트별 Peak 및 시간 특성 확인용
+- 헤더 있음

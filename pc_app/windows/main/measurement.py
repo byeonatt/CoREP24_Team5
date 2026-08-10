@@ -1,6 +1,6 @@
 import time
 
-from PySide6.QtWidgets import QMainWindow, QMessageBox, QInputDialog, QTableWidgetItem
+from PySide6.QtWidgets import QMainWindow, QMessageBox, QInputDialog, QTableWidgetItem, QFileDialog
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtCore import QFile, QIODevice, QTimer
 from pathlib import Path
@@ -11,6 +11,8 @@ from windows.main.connect_dialog import ConnectDialog
 from windows.settings.settings_dialog import SettingsDialog
 from windows.calibration.calibration_window import CalibrationWindow
 from windows.main.realtime_force_graph import RealtimeForceGraph
+from data_manager.data_management_window import DataManagementWindow
+from data_manager.grip_event_detector import GripEventDetector
 
 from communication.protocol import (
     parse_packet,
@@ -46,6 +48,18 @@ class MeasurementWindow(QMainWindow):
         self.current_csv = None
         self.measure_mode = None
         self.device_ready = False
+        self.data_management_window = None
+        self.current_grip_id = None
+
+        self.grip_event_detector = GripEventDetector(
+            start_threshold_n=0.50,
+            release_threshold_n=0.20,
+            release_hold_seconds=0.20,
+            min_peak_force_n=1.00,
+            min_event_duration_s=0.10,
+            min_event_gap_s=0.30,
+        )
+        self.grip_events = []
 
         self.max_measurement_seconds = 60 * 60
         self.inactivity_window_seconds = 5 * 60
@@ -148,6 +162,9 @@ class MeasurementWindow(QMainWindow):
         self.ui.calibrationTabButton.clicked.connect(self.open_calibration_window)
         self.ui.settingsTabButton.clicked.connect(self.open_connect_dialog)
         self.ui.actionConnectionSettings.triggered.connect(self.open_connect_dialog)
+        self.ui.dataTabButton.clicked.connect(self.open_data_management_window)
+        self.ui.actionDataManagement.triggered.connect(self.open_data_management_window)
+        self.ui.actionSaveDirectory.triggered.connect(self.select_save_directory)
 
 
     def update_connection_status(self, connected):
@@ -175,15 +192,28 @@ class MeasurementWindow(QMainWindow):
             self.device_ready = False
             self.is_measuring = False
             self.zero_in_progress = False
-            self.zero_samples.clear()
+
+            self.zero_ignore_count = 0
+            self.zero_samples = {
+                "lc1": [],
+                "lc2": [],
+                "lc3": []
+            }
+
             self.last_force_packet_time = None
 
-            self.measurement_timer.stop()
+            if self.measurement_timer.isActive():
+                self.measurement_timer.stop()
+            if self.measurement_safety_timer.isActive():
+                self.measurement_safety_timer.stop()
+
+            self.reset_measurement_safety_state()
+            self.force_graph.stop()
             self.close_current_csv()
 
             if self.handshake_timer.isActive():
                 self.handshake_timer.stop()
-            
+
             self.last_force_data = None
             self.rate_sample_count = 0
             self.rate_start_time = None
@@ -224,6 +254,7 @@ class MeasurementWindow(QMainWindow):
         self.ui.modeButton.setEnabled(available)
         self.ui.startButton.setEnabled(available)
         self.ui.stopButton.setEnabled(ready and self.is_measuring)
+        self.ui.dataTabButton.setEnabled(not self.is_measuring)
         self.ui.settingsTabButton.setEnabled(
             self.connected
             and not self.is_measuring
@@ -234,6 +265,8 @@ class MeasurementWindow(QMainWindow):
             and not self.is_measuring
             and not self.zero_in_progress
         )
+        self.ui.actionDataManagement.setEnabled(not self.is_measuring)
+        self.ui.actionSaveDirectory.setEnabled(not self.is_measuring)
 
     def open_connect_dialog(self):
         dialog = ConnectDialog(self.serial_manager) 
@@ -277,14 +310,19 @@ class MeasurementWindow(QMainWindow):
                 return
 
             # CSV 파일 생성
-            grip_id = (self.config.get_next_grip_id())
-            self.current_csv = (self.csv_manager.start_measurement(grip_id))
+            self.current_grip_id = (self.config.get_next_grip_id())
+            self.current_csv = (self.csv_manager.start_measurement(self.current_grip_id))
 
             # 측정값 초기화
             self.peak_force = 0.0
             self.force_sum = 0.0
             self.sample_count = 0
             self.rate_sample_count = 0
+
+            # Grip Event 초기화
+            self.grip_event_detector.reset()
+            self.grip_events.clear()
+
             self.force_graph.start()
 
             now = time.monotonic()
@@ -315,6 +353,7 @@ class MeasurementWindow(QMainWindow):
     def stop_measurement(self):
         if not self.is_measuring:
             return
+        self.grip_event_detector.cancel_active_event()
         self.is_measuring = False
         if self.measurement_safety_timer.isActive():
             self.measurement_safety_timer.stop()
@@ -326,6 +365,8 @@ class MeasurementWindow(QMainWindow):
 
         self.ui.measurementStateLabel.setText("측정 완료")
         self.close_current_csv()
+        self.save_session_result()
+        self.current_grip_id = None
         self.update_button_state()
 
     def close_current_csv(self):
@@ -337,14 +378,27 @@ class MeasurementWindow(QMainWindow):
         self.calibration_window = CalibrationWindow(self.serial_manager)
         self.calibration_window.show()
 
+    def open_data_management_window(self):
+        if self.is_measuring:
+            QMessageBox.information(
+                self,
+                "데이터 관리",
+                "측정 중에는 데이터 관리 화면을 "
+                "열 수 없습니다.\n\n"
+                "측정을 종료한 후 다시 시도해 주세요."
+            )
+            return
 
-    def open_settings_dialog(self):
-        self.setting_dialog = SettingsDialog(self.measure_mode, str(self.config.get_base_directory()), self.serial_manager)
-
-        if self.setting_dialog.dialog.exec():
-            self.measure_mode = self.setting_dialog.measure_mode
-            self.config.set_save_directory(self.setting_dialog.save_directory)
-            self.update_measure_mode()
+        try:
+            base_directory = (self.config.get_base_directory())
+            self.data_management_window = (DataManagementWindow(base_directory=base_directory))
+            self.data_management_window.show()
+        except Exception as e:
+            QMessageBox.warning(
+                self,
+                "데이터 관리 오류",
+                f"데이터 관리 화면을 열지 못했습니다.\n\n{e}"
+            )
 
     def set_measure_mode(self, mode):
         self.measure_mode = mode
@@ -541,6 +595,27 @@ class MeasurementWindow(QMainWindow):
                     mode=self.measure_mode,
                     data=data
                 )
+                event = self.grip_event_detector.update(
+                    elapsed_time_s=elapsed,
+                    total_force_n=data.total_force
+                )
+                if event is not None:
+                    self.grip_events.append(event)
+                    self.csv_manager.append_grip_event(
+                        event_id=event.event_id,
+                        start_time_s=event.start_time_s,
+                        peak_time_s=event.peak_time_s,
+                        end_time_s=event.end_time_s,
+                        duration_s=event.duration_s,
+                        peak_force_n=event.peak_force_n
+                    )
+                    # 임시(파지 테스트)
+                    print(
+                        f"[GRIP EVENT] #{event.event_id} "
+                        f"Peak={event.peak_force_n:.3f} N "
+                        f"Duration={event.duration_s:.3f} s"
+                    )
+
                 self.update_inactivity_monitor(data)
 
             self.ui.pcEspStatusLabel.setText("정상") # 통신 상태 정상 확인
@@ -586,6 +661,7 @@ class MeasurementWindow(QMainWindow):
                 self.zero_samples.clear()
 
             if self.is_measuring:
+                self.grip_event_detector.cancel_active_event()
                 self.is_measuring = False
                 if self.measurement_timer.isActive():
                     self.measurement_timer.stop()
@@ -867,4 +943,96 @@ class MeasurementWindow(QMainWindow):
                 "측정을 자동으로 종료했습니다.\n\n"
                 f"최근 변화폭: {variation:.3f} N\n"
                 f"종료 기준: {self.inactivity_threshold_n:.3f} N"
+            )
+
+    def select_save_directory(self):
+        if self.is_measuring:
+            QMessageBox.information(
+                self,
+                "저장 경로 변경",
+                "측정 중에는 저장 경로를 변경할 수 없습니다."
+            )
+            return
+        
+        current_directory = str(self.config.get_base_directory())
+        folder = QFileDialog.getExistingDirectory(
+            self,
+            "데이터 저장 폴더 선택",
+            current_directory
+        )
+
+        if not folder: return
+
+        try:
+            self.config.set_save_directory(folder)
+            new_session_directory = (self.config.get_save_directory())
+            new_session_directory.mkdir(parents=True, exist_ok=True)
+            self.csv_manager.set_save_directory(new_session_directory)
+
+        except Exception as e:
+            QMessageBox.warning(
+                self,
+                "저장 경로 변경 실패",
+                str(e)
+            )
+            return
+
+        QMessageBox.information(
+            self,
+            "저장 경로 변경",
+            "데이터 저장 경로를 변경했습니다.\n\n"
+            f"{new_session_directory}"
+        )
+
+    def save_session_result(self):
+
+        if self.current_grip_id is None:
+            return
+        if self.measurement_start_time is None:
+            return
+        
+        duration = (time.monotonic() - self.measurement_start_time)
+
+        if self.sample_count > 0:
+            average_force = (self.force_sum / self.sample_count)
+        else:
+            average_force = 0.0
+
+        event_count = len(self.grip_events)
+        event_peaks = [event.peak_force_n for event in self.grip_events]
+
+        if event_peaks:
+            event_peak_min = min(event_peaks)
+            event_peak_max = max(event_peaks)
+            event_peak_avg = (sum(event_peaks) / len(event_peaks))
+        else:
+            event_peak_min = None
+            event_peak_avg = None
+            event_peak_max = None
+
+        timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+
+        try:
+            self.csv_manager.append_session_result(
+                grip_id=self.current_grip_id,
+                timestamp=timestamp,
+                mode=self.measure_mode,
+
+                max_force=self.peak_force,
+                average_force=average_force,
+                duration=duration,
+
+                event_count=event_count,
+                event_peak_min=event_peak_min,
+                event_peak_avg=event_peak_avg,
+                event_peak_max=event_peak_max
+            )
+
+        except Exception as e:
+            QMessageBox.warning(
+                self,
+                "Session 저장 오류",
+                "측정 원본 데이터는 저장되었지만 "
+                "Session 요약 저장에 실패했습니다."
+                f"\n\n{e}"
             )
