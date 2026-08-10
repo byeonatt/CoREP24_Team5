@@ -9,6 +9,7 @@ from collections import deque
 from data_manager.csv_manager import CSVManager
 from windows.main.connect_dialog import ConnectDialog
 from windows.settings.settings_dialog import SettingsDialog
+from windows.settings.judgement_settings_dialog import JudgementSettingsDialog
 from windows.calibration.calibration_window import CalibrationWindow
 from windows.main.realtime_force_graph import RealtimeForceGraph
 from data_manager.data_management_window import DataManagementWindow
@@ -48,6 +49,7 @@ class MeasurementWindow(QMainWindow):
         self.current_csv = None
         self.measure_mode = None
         self.device_ready = False
+        self.current_judgement = None
         self.data_management_window = None
         self.current_grip_id = None
 
@@ -147,6 +149,10 @@ class MeasurementWindow(QMainWindow):
         self.ui.handshakeStatusLabel.setText("대기")
         self.ui.adcStatusLabel.setText("미수신")
 
+        self.ui.gripCountLabel.setText("0")
+        self.ui.judgementSummaryLabel.setText("대기")
+        self.ui.forceRangeLabel.setText("미적용")
+
     def connect_signal(self):
         # SerialManager signal 연결
         if self.serial_manager:
@@ -162,6 +168,7 @@ class MeasurementWindow(QMainWindow):
         self.ui.calibrationTabButton.clicked.connect(self.open_calibration_window)
         self.ui.settingsTabButton.clicked.connect(self.open_connect_dialog)
         self.ui.actionConnectionSettings.triggered.connect(self.open_connect_dialog)
+        self.ui.actionJudgementSettings.triggered.connect(self.open_judgement_settings)
         self.ui.dataTabButton.clicked.connect(self.open_data_management_window)
         self.ui.actionDataManagement.triggered.connect(self.open_data_management_window)
         self.ui.actionSaveDirectory.triggered.connect(self.select_save_directory)
@@ -267,11 +274,23 @@ class MeasurementWindow(QMainWindow):
         )
         self.ui.actionDataManagement.setEnabled(not self.is_measuring)
         self.ui.actionSaveDirectory.setEnabled(not self.is_measuring)
+        self.ui.actionJudgementSettings.setEnabled(not self.is_measuring and not self.zero_in_progress)
 
     def open_connect_dialog(self):
         dialog = ConnectDialog(self.serial_manager) 
         dialog.exec()
 
+    def open_judgement_settings(self):
+        if self.is_measuring:
+            QMessageBox.warning(
+                self,
+                "판정 기준 설정",
+                "측정 중에는 판정 기준을 변경할 수 없습니다."
+            )
+            return
+        dialog = JudgementSettingsDialog(self.config)
+        if dialog.dialog.exec():
+            self.update_judgement_display()
 
     def start_measurement(self):
         try:
@@ -308,6 +327,8 @@ class MeasurementWindow(QMainWindow):
                     "ADS1256 통신 상태가 정상적이지 않습니다."
                 )
                 return
+            
+            self.current_judgement = (self.config.get_judgement_snapshot(self.measure_mode))
 
             # CSV 파일 생성
             self.current_grip_id = (self.config.get_next_grip_id())
@@ -329,6 +350,7 @@ class MeasurementWindow(QMainWindow):
             self.measurement_start_time = now
             self.rate_start_time = now
             self.is_measuring = True
+            self.update_judgement_display()
 
             self.ui.peakForceLabel.setText("0.00 N")
             self.ui.averageForceLabel.setText("0.00 N")
@@ -549,6 +571,39 @@ class MeasurementWindow(QMainWindow):
         self.ui.modeValueLabel.setText(text)
         self.force_graph.set_mode(self.measure_mode)
         self.ui.modeButton.setToolTip(f"현재 측정 모드: {text}")
+        self.update_judgement_display()
+
+    def update_judgement_display(self):
+        if (
+            self.is_measuring
+            and self.current_judgement is not None
+        ):
+            judgement = self.current_judgement
+        else:
+            if not self.config.get_judgement_enabled():
+                judgement = {
+                    "enabled": False,
+                    "lower_limit_n": None,
+                    "upper_limit_n": None,
+                }
+            elif self.measure_mode is None:
+                judgement = None
+            else:
+                judgement = (self.config.get_judgement_snapshot(self.measure_mode))
+
+        if judgement is None:
+            self.ui.forceRangeLabel.setText("모드 선택 필요")
+            self.ui.judgementSummaryLabel.setText("대기")
+            return
+        if not judgement["enabled"]:
+            self.ui.forceRangeLabel.setText("미적용")
+            self.ui.judgementSummaryLabel.setText("판정 미적용")
+            return
+        
+        lower = judgement["lower_limit_n"]
+        upper = judgement["upper_limit_n"]
+        self.ui.forceRangeLabel.setText(f"{lower:.3f} ~ {upper:.3f} N")
+        self.ui.judgementSummaryLabel.setText("OK 0 / NG 0")
 
     def close_application(self):
         if self.serial_manager:

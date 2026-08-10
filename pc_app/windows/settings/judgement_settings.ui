@@ -1,0 +1,427 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>JudgementSettingsDialog</class>
+ <widget class="QDialog" name="JudgementSettingsDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>560</width>
+    <height>565</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>560</width>
+    <height>565</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>560</width>
+    <height>565</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>판정 기준 설정</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">
+QDialog {
+    background: #f7f8fa;
+    color: #202124;
+    font-family: "Malgun Gothic";
+    font-size: 10pt;
+}
+QFrame#mainCard {
+    background: white;
+    border: 1px solid #d9dde3;
+    border-radius: 8px;
+}
+QLabel#titleLabel {
+    font-size: 16pt;
+    font-weight: bold;
+}
+QLabel#descriptionLabel, QLabel#statusHintLabel {
+    color: #66707a;
+}
+QGroupBox {
+    background: #ffffff;
+    border: 1px solid #d9dde3;
+    border-radius: 7px;
+    margin-top: 10px;
+    padding-top: 8px;
+    font-weight: bold;
+}
+QGroupBox::title {
+    subcontrol-origin: margin;
+    left: 12px;
+    padding: 0 5px;
+}
+QDoubleSpinBox {
+    background: white;
+    border: 1px solid #cfd5dc;
+    border-radius: 5px;
+    padding: 5px 8px;
+    min-height: 25px;
+}
+QPushButton {
+    background: #ffffff;
+    border: 1px solid #cfd5dc;
+    border-radius: 6px;
+    padding: 8px 16px;
+}
+QPushButton:hover {
+    background: #f0f4f8;
+}
+QPushButton#saveButton {
+    background: #1976d2;
+    color: white;
+    border: 0;
+    font-weight: bold;
+}
+QRadioButton {
+    spacing: 7px;
+}
+   </string>
+  </property>
+  <layout class="QVBoxLayout" name="mainLayout">
+   <property name="leftMargin">
+    <number>16</number>
+   </property>
+   <property name="topMargin">
+    <number>16</number>
+   </property>
+   <property name="rightMargin">
+    <number>16</number>
+   </property>
+   <property name="bottomMargin">
+    <number>16</number>
+   </property>
+   <item>
+    <widget class="QFrame" name="mainCard">
+     <layout class="QVBoxLayout" name="cardLayout">
+      <property name="leftMargin">
+       <number>18</number>
+      </property>
+      <property name="topMargin">
+       <number>18</number>
+      </property>
+      <property name="rightMargin">
+       <number>18</number>
+      </property>
+      <property name="bottomMargin">
+       <number>18</number>
+      </property>
+      <item>
+       <widget class="QLabel" name="titleLabel">
+        <property name="text">
+         <string>판정 기준 설정</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="descriptionLabel">
+        <property name="text">
+         <string>새 Measurement에 적용할 OK/NG 판정 기준을 설정합니다.</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="verticalSpacerTop">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>6</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="applyLayout">
+        <item>
+         <widget class="QRadioButton" name="enableRadioButton">
+          <property name="text">
+           <string>판정 기준 적용</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QRadioButton" name="disableRadioButton">
+          <property name="text">
+           <string>판정 기준 미적용</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="applySpacer">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QLabel" name="statusHintLabel">
+        <property name="text">
+         <string>파지력은 기록하지만 OK/NG 판정은 수행하지 않습니다.</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QWidget" name="rangeContainer" native="true">
+        <layout class="QVBoxLayout" name="rangeLayout">
+         <property name="leftMargin">
+          <number>0</number>
+         </property>
+         <property name="topMargin">
+          <number>4</number>
+         </property>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
+          <number>0</number>
+         </property>
+         <item>
+          <widget class="QGroupBox" name="odGroupBox">
+           <property name="title">
+            <string>외경 (MODE_OD)</string>
+           </property>
+           <layout class="QGridLayout" name="odLayout">
+            <item row="0" column="0">
+             <widget class="QLabel" name="odMinLabel">
+              <property name="text">
+               <string>최소 파지력</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QDoubleSpinBox" name="odMinSpinBox">
+              <property name="decimals">
+               <number>3</number>
+              </property>
+              <property name="maximum">
+               <double>1000.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>0.100000000000000</double>
+              </property>
+              <property name="suffix">
+               <string> N</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="2">
+             <widget class="QLabel" name="odMaxLabel">
+              <property name="text">
+               <string>최대 파지력</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="3">
+             <widget class="QDoubleSpinBox" name="odMaxSpinBox">
+              <property name="decimals">
+               <number>3</number>
+              </property>
+              <property name="maximum">
+               <double>1000.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>0.100000000000000</double>
+              </property>
+              <property name="suffix">
+               <string> N</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="QGroupBox" name="id2GroupBox">
+           <property name="title">
+            <string>내경 2-Jaw (MODE_ID_2)</string>
+           </property>
+           <layout class="QGridLayout" name="id2Layout">
+            <item row="0" column="0">
+             <widget class="QLabel" name="id2MinLabel">
+              <property name="text">
+               <string>최소 파지력</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QDoubleSpinBox" name="id2MinSpinBox">
+              <property name="decimals">
+               <number>3</number>
+              </property>
+              <property name="maximum">
+               <double>1000.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>0.100000000000000</double>
+              </property>
+              <property name="suffix">
+               <string> N</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="2">
+             <widget class="QLabel" name="id2MaxLabel">
+              <property name="text">
+               <string>최대 파지력</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="3">
+             <widget class="QDoubleSpinBox" name="id2MaxSpinBox">
+              <property name="decimals">
+               <number>3</number>
+              </property>
+              <property name="maximum">
+               <double>1000.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>0.100000000000000</double>
+              </property>
+              <property name="suffix">
+               <string> N</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="QGroupBox" name="id3GroupBox">
+           <property name="title">
+            <string>내경 3-Jaw (MODE_ID_3)</string>
+           </property>
+           <layout class="QGridLayout" name="id3Layout">
+            <item row="0" column="0">
+             <widget class="QLabel" name="id3MinLabel">
+              <property name="text">
+               <string>최소 파지력</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QDoubleSpinBox" name="id3MinSpinBox">
+              <property name="decimals">
+               <number>3</number>
+              </property>
+              <property name="maximum">
+               <double>1000.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>0.100000000000000</double>
+              </property>
+              <property name="suffix">
+               <string> N</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="2">
+             <widget class="QLabel" name="id3MaxLabel">
+              <property name="text">
+               <string>최대 파지력</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="3">
+             <widget class="QDoubleSpinBox" name="id3MaxSpinBox">
+              <property name="decimals">
+               <number>3</number>
+              </property>
+              <property name="maximum">
+               <double>1000.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>0.100000000000000</double>
+              </property>
+              <property name="suffix">
+               <string> N</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <spacer name="bottomSpacer">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>8</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="buttonLayout">
+        <item>
+         <spacer name="buttonSpacer">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QPushButton" name="cancelButton">
+          <property name="minimumSize">
+           <size>
+            <width>90</width>
+            <height>38</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>취소</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="saveButton">
+          <property name="minimumSize">
+           <size>
+            <width>110</width>
+            <height>38</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>저장</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

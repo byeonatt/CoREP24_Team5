@@ -1,8 +1,27 @@
 {
     "user": "Default",
-    "save_directory": "C:\\Users\\byeonatt\\Documents\\GitHub\\CoREP24_Team5\\Users\\byeonatt\\Documents\\GripForceData",
+    "save_directory": "",
     "com_port": "AUTO",
     "auto_save": true,
     "auto_reconnect": true,
-    "last_session_id": 2
+    "last_session_id": 2,
+
+    "judgement": {
+        "enabled": false,
+
+        "MODE_OD": {
+            "min_force": 0.0,
+            "max_force": 0.0
+        },
+
+        "MODE_ID_2": {
+            "min_force": 0.0,
+            "max_force": 0.0
+        },
+
+        "MODE_ID_3": {
+            "min_force": 0.0,
+            "max_force": 0.0
+        }
+    }
 }
