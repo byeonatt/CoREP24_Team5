@@ -2,7 +2,7 @@ from pathlib import Path
 
 from PySide6.QtCore import QFile, QIODevice, Qt
 from PySide6.QtUiTools import QUiLoader
-from PySide6.QtWidgets import QMessageBox
+from PySide6.QtWidgets import QMessageBox, QAbstractSpinBox
 
 
 class JudgementSettingsDialog:
@@ -65,6 +65,7 @@ class JudgementSettingsDialog:
             self.dialog.size()
         )
 
+        self.setup_spin_boxes()
         self.load_settings()
         self.connect_signal()
         self.update_input_state()
@@ -237,3 +238,49 @@ class JudgementSettingsDialog:
         )
 
         self.dialog.accept()
+
+    def setup_spin_boxes(self):
+
+        spin_boxes = [
+            self.dialog.odMinSpinBox,
+            self.dialog.odMaxSpinBox,
+
+            self.dialog.id2MinSpinBox,
+            self.dialog.id2MaxSpinBox,
+
+            self.dialog.id3MinSpinBox,
+            self.dialog.id3MaxSpinBox,
+        ]
+
+        for spin_box in spin_boxes:
+
+            # 위/아래 화살표 명시
+            spin_box.setButtonSymbols(
+                QAbstractSpinBox.ButtonSymbols.UpDownArrows
+            )
+
+            # 클릭 한 번당 0.1 N
+            spin_box.setSingleStep(
+                0.1
+            )
+
+            # 꾹 누르면 연속 변경
+            spin_box.setAccelerated(
+                True
+            )
+
+            # 입력 가능한 범위
+            spin_box.setRange(
+                0.0,
+                1000.0
+            )
+
+            # 표시 소수점
+            spin_box.setDecimals(
+                3
+            )
+
+            # 직접 입력도 가능
+            spin_box.setReadOnly(
+                False
+            )

@@ -114,7 +114,6 @@ class GripFileLoadWorker(QObject):
                 "CSV 형식이 현재 PC App 형식과 일치하는지 확인해 주세요."
             )
 
-        average = force_sum / samples
         sampling_rate = (samples / duration) if duration > 0 else 0.0
 
         return {
@@ -124,7 +123,6 @@ class GripFileLoadWorker(QObject):
             "samples": samples,
             "duration": duration,
             "peak": peak if peak is not None else 0.0,
-            "average": average,
             "sampling_rate": sampling_rate,
             "abnormal_status": abnormal_status,
             "malformed": malformed,
@@ -698,10 +696,6 @@ class DataManagementWindow(QMainWindow):
             f'{result["peak"]:.3f} N'
         )
 
-        self.ui.averageValueLabel.setText(
-            f'{result["average"]:.3f} N'
-        )
-
         self.ui.rateValueLabel.setText(
             f'{result["sampling_rate"]:.1f} Hz'
         )
@@ -805,7 +799,6 @@ class DataManagementWindow(QMainWindow):
         self.ui.samplesValueLabel.setText("-")
         self.ui.durationValueLabel.setText("-")
         self.ui.peakValueLabel.setText("-")
-        self.ui.averageValueLabel.setText("-")
         self.ui.rateValueLabel.setText("-")
         self.ui.statusValueLabel.setText("-")
 

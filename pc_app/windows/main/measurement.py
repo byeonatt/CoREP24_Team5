@@ -132,7 +132,6 @@ class MeasurementWindow(QMainWindow):
     def test_display(self):
         self.ui.currentForceLabel.setText("0.00 N")
         self.ui.peakForceLabel.setText("0.00 N")
-        self.ui.averageForceLabel.setText("0.00 N")
 
         self.ui.connectedLabel.setText("●  연결 대기")
         self.ui.portValueLabel.setText("-")
@@ -353,15 +352,23 @@ class MeasurementWindow(QMainWindow):
             self.update_judgement_display()
 
             self.ui.peakForceLabel.setText("0.00 N")
-            self.ui.averageForceLabel.setText("0.00 N")
             self.ui.measurementTimeLabel.setText("00:00.0")
             self.ui.samplingRateLabel.setText("0 Hz")
             self.ui.measurementStateLabel.setText("측정 중")
+
+            self.ok_count = 0
+            self.ng_count = 0
+            self.grip_events.clear()
+            self.ui.gripCountLabel.setText("0")
+            self.ui.forceStatusLabel.setText("판정 대기")
 
             self.reset_measurement_safety_state()
             self.measurement_safety_timer.start()
             self.measurement_timer.start()
             self.update_button_state()
+
+            self.is_measuring = True 
+            self.start_simulator_grip_test() # 테스트 (나중에 지우기)
 
 
         except Exception as e:
@@ -642,6 +649,7 @@ class MeasurementWindow(QMainWindow):
 
             if self.zero_in_progress:
                 self.check_zero_result(data)
+
             if self.is_measuring:
                 self.rate_sample_count += 1
                 elapsed = (time.monotonic() - self.measurement_start_time)
@@ -656,6 +664,41 @@ class MeasurementWindow(QMainWindow):
                 )
                 if event is not None:
                     self.grip_events.append(event)
+
+                    grip_count = len(self.grip_events)
+                    self.ui.gripCountLabel.setText(str(grip_count))
+
+                    judge_force_n = event.peak_force_n
+                    judgement = self.current_judgement
+
+                    if (judgement is not None and judgement.get("enabled", False)):
+                        lower = judgement["lower_limit_n"]
+                        upper = judgement["upper_limit_n"]
+
+                        if (lower <= judge_force_n <= upper):
+                            result = "OK"
+                            self.ok_count += 1
+                        else:
+                            result = "NG"
+                            self.ng_count += 1
+
+                        self.ui.judgementSummaryLabel.setText(
+                            f"OK {self.ok_count} / "
+                            f"NG {self.ng_count}"
+                        )
+                        self.ui.forceStatusLabel.setText(
+                            f"{result}  "
+                            f"{judge_force_n:.3f} N"
+                        )
+
+                    else:
+                        result = "NOT_APPLIED"
+                        self.ui.judgementSummaryLabel.setText("판정 미적용")
+                        self.ui.forceStatusLabel.setText(
+                            f"Grip #{event.event_id} 감지  "
+                            f"{judge_force_n:.3f} N"
+                        )
+
                     self.csv_manager.append_grip_event(
                         event_id=event.event_id,
                         start_time_s=event.start_time_s,
@@ -663,12 +706,6 @@ class MeasurementWindow(QMainWindow):
                         end_time_s=event.end_time_s,
                         duration_s=event.duration_s,
                         peak_force_n=event.peak_force_n
-                    )
-                    # 임시(파지 테스트)
-                    print(
-                        f"[GRIP EVENT] #{event.event_id} "
-                        f"Peak={event.peak_force_n:.3f} N "
-                        f"Duration={event.duration_s:.3f} s"
                     )
 
                 self.update_inactivity_monitor(data)
@@ -696,9 +733,6 @@ class MeasurementWindow(QMainWindow):
 
         self.force_sum += total_force
         self.sample_count += 1
-
-        average = (self.force_sum / self.sample_count)
-        self.ui.averageForceLabel.setText(f"{average:.2f} N")
 
     def check_force_packet_timeout(self):
         if not self.connected: return
@@ -1048,11 +1082,6 @@ class MeasurementWindow(QMainWindow):
         
         duration = (time.monotonic() - self.measurement_start_time)
 
-        if self.sample_count > 0:
-            average_force = (self.force_sum / self.sample_count)
-        else:
-            average_force = 0.0
-
         event_count = len(self.grip_events)
         event_peaks = [event.peak_force_n for event in self.grip_events]
 
@@ -1074,7 +1103,6 @@ class MeasurementWindow(QMainWindow):
                 mode=self.measure_mode,
 
                 max_force=self.peak_force,
-                average_force=average_force,
                 duration=duration,
 
                 event_count=event_count,
@@ -1090,4 +1118,61 @@ class MeasurementWindow(QMainWindow):
                 "측정 원본 데이터는 저장되었지만 "
                 "Session 요약 저장에 실패했습니다."
                 f"\n\n{e}"
+            )
+
+
+
+    ### 이하 테스트용 함수 (앱으로 빌드할 때 삭제) ###
+    def start_simulator_grip_test(self):
+
+        if self.serial_manager is None:
+            return
+
+        start_func = getattr(
+            self.serial_manager,
+            "start_auto_grip_test",
+            None
+        )
+
+        if not callable(start_func):
+            return
+
+        try:
+            start_func(
+                first_delay_s=2.0
+            )
+
+            print(
+                "[SIM] Measurement 시작과 "
+                "자동 Grip 테스트 동기화"
+            )
+
+        except Exception as e:
+            print(
+                "[SIM] 자동 Grip 테스트 "
+                f"시작 실패: {e}"
+            )
+
+
+    def stop_simulator_grip_test(self):
+
+        if self.serial_manager is None:
+            return
+
+        stop_func = getattr(
+            self.serial_manager,
+            "stop_auto_grip_test",
+            None
+        )
+
+        if not callable(stop_func):
+            return
+
+        try:
+            stop_func()
+
+        except Exception as e:
+            print(
+                "[SIM] 자동 Grip 테스트 "
+                f"종료 실패: {e}"
             )

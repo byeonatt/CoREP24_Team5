@@ -393,24 +393,6 @@ QStatusBar {
           </widget>
          </item>
          <item>
-          <layout class="QVBoxLayout" name="averageMetricLayout">
-           <item>
-            <widget class="QLabel" name="metricTitle">
-             <property name="text">
-              <string>평균 파지력</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="averageForceLabel">
-             <property name="text">
-              <string>0.00 N</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-         <item>
           <widget class="QFrame" name="forceStatusFrame">
            <property name="minimumSize">
             <size>

@@ -34,8 +34,7 @@ class CSVManager:
         "event_peak_min_n",
         "event_peak_avg_n",
         "event_peak_max_n",
-        "raw_peak_n",
-        "raw_average_n",
+        "raw_peak_n"
     ]
 
     def __init__(self, save_directory: Path):
@@ -331,7 +330,6 @@ class CSVManager:
         timestamp,
         mode,
         max_force: float,
-        average_force: float,
         duration: float,
         event_count: int = 0,
         event_peak_min: float | None = None,
@@ -342,7 +340,7 @@ class CSVManager:
         Measurement 하나가 종료될 때 Session 요약에 한 행 추가.
 
         기존 measurement.py 호출과 호환되도록
-        grip_id / max_force / average_force / duration 인자는 유지한다.
+        grip_id / max_force / duration 인자는 유지한다.
         추후 GripEventDetector를 연결하면 event_* 값도 함께 전달한다.
         """
 
@@ -369,6 +367,5 @@ class CSVManager:
                 format_optional(event_peak_min),
                 format_optional(event_peak_avg),
                 format_optional(event_peak_max),
-                f"{max_force:.3f}",
-                f"{average_force:.3f}",
+                f"{max_force:.3f}"
             ])
