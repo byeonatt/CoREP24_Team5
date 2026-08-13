@@ -1,0 +1,334 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>HelpWidget</class>
+ <widget class="QWidget" name="HelpWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>980</width>
+    <height>720</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>840</width>
+    <height>600</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>사용 설명서</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">QWidget#HelpWidget {
+    background: #f7f8fa;
+    color: #202124;
+    font-family: &quot;Malgun Gothic&quot;;
+    font-size: 10pt;
+}
+QFrame#headerFrame, QFrame#quickStartFrame {
+    background: #ffffff;
+    border: 1px solid #d9dde3;
+    border-radius: 8px;
+}
+QLabel#titleLabel {
+    color: #1f2937;
+    font-size: 18pt;
+    font-weight: 700;
+}
+QLabel#subtitleLabel {
+    color: #626b75;
+    font-size: 10pt;
+}
+QLabel#quickStartTitleLabel {
+    color: #244d73;
+    font-weight: 700;
+}
+QLabel#quickStartFlowLabel {
+    color: #2f3e4d;
+    font-weight: 600;
+}
+QTabWidget::pane {
+    background: #ffffff;
+    border: 1px solid #cfd5dc;
+    top: -1px;
+}
+QTabBar::tab {
+    background: #edf1f5;
+    color: #49535e;
+    border: 1px solid #cfd5dc;
+    border-bottom: none;
+    min-width: 120px;
+    padding: 10px 18px;
+    margin-right: 2px;
+}
+QTabBar::tab:selected {
+    background: #ffffff;
+    color: #244d73;
+    font-weight: 700;
+}
+QTabBar::tab:hover:!selected {
+    background: #e3e9ef;
+}
+QTextBrowser {
+    background: #ffffff;
+    border: none;
+    selection-background-color: #b9d5f2;
+}
+QLabel#sectionLabel, QLabel#versionLabel {
+    color: #707780;
+    font-size: 9pt;
+}
+QPushButton#closeButton {
+    background: #ffffff;
+    border: 1px solid #bfc6cf;
+    border-radius: 6px;
+    min-width: 90px;
+    padding: 7px 14px;
+}
+QPushButton#closeButton:hover {
+    background: #eef2f6;
+}</string>
+  </property>
+  <layout class="QVBoxLayout" name="mainLayout">
+   <property name="leftMargin">
+    <number>18</number>
+   </property>
+   <property name="topMargin">
+    <number>18</number>
+   </property>
+   <property name="rightMargin">
+    <number>18</number>
+   </property>
+   <property name="bottomMargin">
+    <number>14</number>
+   </property>
+   <property name="spacing">
+    <number>12</number>
+   </property>
+   <item>
+    <widget class="QFrame" name="headerFrame">
+     <property name="frameShape">
+      <enum>QFrame::Shape::StyledPanel</enum>
+     </property>
+     <layout class="QVBoxLayout" name="headerLayout">
+      <property name="leftMargin">
+       <number>18</number>
+      </property>
+      <property name="topMargin">
+       <number>14</number>
+      </property>
+      <property name="rightMargin">
+       <number>18</number>
+      </property>
+      <property name="bottomMargin">
+       <number>14</number>
+      </property>
+      <property name="spacing">
+       <number>3</number>
+      </property>
+      <item>
+       <widget class="QLabel" name="titleLabel">
+        <property name="text">
+         <string>Grip Force Measurement System 사용 설명서</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="subtitleLabel">
+        <property name="text">
+         <string>인서트 전용 미세 파지력 측정기의 통신, 측정, 캘리브레이션 및 데이터 저장 절차</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QFrame" name="quickStartFrame">
+     <property name="frameShape">
+      <enum>QFrame::Shape::StyledPanel</enum>
+     </property>
+     <layout class="QHBoxLayout" name="quickStartLayout">
+      <property name="leftMargin">
+       <number>16</number>
+      </property>
+      <property name="topMargin">
+       <number>10</number>
+      </property>
+      <property name="rightMargin">
+       <number>16</number>
+      </property>
+      <property name="bottomMargin">
+       <number>10</number>
+      </property>
+      <property name="spacing">
+       <number>14</number>
+      </property>
+      <item>
+       <widget class="QLabel" name="quickStartTitleLabel">
+        <property name="text">
+         <string>빠른 시작</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="quickStartFlowLabel">
+        <property name="text">
+         <string>통신 연결  →  모드 설정  →  영점 설정  →  판정 기준 확인  →  측정 시작  →  측정 종료  →  데이터 확인</string>
+        </property>
+        <property name="wordWrap">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QTabWidget" name="helpTabWidget">
+     <property name="currentIndex">
+      <number>0</number>
+     </property>
+     <property name="documentMode">
+      <bool>true</bool>
+     </property>
+     <property name="movable">
+      <bool>false</bool>
+     </property>
+     <widget class="QWidget" name="communicationTab">
+      <attribute name="title">
+       <string>통신</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="communicationLayout">
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QTextBrowser" name="communicationBrowser"/>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="measurementTab">
+      <attribute name="title">
+       <string>측정</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="measurementLayout">
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QTextBrowser" name="measurementBrowser"/>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="calibrationTab">
+      <attribute name="title">
+       <string>캘리브레이션</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="calibrationLayout">
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QTextBrowser" name="calibrationBrowser"/>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="storageTab">
+      <attribute name="title">
+       <string>저장</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="storageLayout">
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QTextBrowser" name="storageBrowser"/>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="footerLayout">
+     <item>
+      <widget class="QLabel" name="sectionLabel">
+       <property name="text">
+        <string>현재 항목: 통신</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="footerSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QLabel" name="versionLabel">
+       <property name="text">
+        <string>Grip Force Measurement System  v1.0.0</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="closeButton">
+       <property name="text">
+        <string>닫기</string>
+       </property>
+       <property name="shortcut">
+        <string>Esc</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

@@ -357,54 +357,111 @@ class SimulatedSerialManager(QObject):
     # ---------------------------------------------------------
 
     def _emit_force_packet(self):
+
         if not self.connected:
             return
 
         if not self.data_enabled:
             return
 
-        force = (
+        # =====================================================
+        # 현재 Simulator가 이미 만들어놓은 실제 가상 하중
+        # =====================================================
+
+        physical_force = (
             self.simulated_force
             - self.zero_offset
         )
 
-        noise1 = random.uniform(
-            -0.003,
-            0.003,
-        )
-        noise2 = random.uniform(
-            -0.003,
-            0.003,
-        )
-        noise3 = random.uniform(
-            -0.003,
-            0.003,
-        )
+        # =====================================================
+        # 모드에 따라 실제 하중 분배
+        # =====================================================
 
-        # 3-Jaw는 세 채널 사용
         if self.mode == "MODE_ID_3":
-            f1 = force / 3.0 + noise1
-            f2 = force / 3.0 + noise2
-            f3 = force / 3.0 + noise3
 
-        # 외경 / 내경 2-Jaw는 LC1, LC2 중심으로 시뮬레이션
-        else:
-            f1 = force / 2.0 + noise1
-            f2 = force / 2.0 + noise2
-            f3 = noise3
+            physical_lc1 = physical_force / 3.0
+            physical_lc2 = physical_force / 3.0
+            physical_lc3 = physical_force / 3.0
+
+            factor_key = "id3"
+
+        elif self.mode == "MODE_ID_2":
+
+            physical_lc1 = physical_force / 2.0
+            physical_lc2 = physical_force / 2.0
+            physical_lc3 = 0.0
+
+            factor_key = "id2"
+
+        else:  # MODE_OD
+
+            physical_lc1 = physical_force / 2.0
+            physical_lc2 = physical_force / 2.0
+            physical_lc3 = 0.0
+
+            factor_key = "od"
+
+        # =====================================================
+        # 가상 센서 RAW 생성
+        # =====================================================
+
+        raw_noise1 = random.randint(-15, 15)
+        raw_noise2 = random.randint(-15, 15)
+        raw_noise3 = random.randint(-15, 15)
 
         raw1 = int(
             self.raw_baseline[0]
-            + f1 * self.counts_per_newton
+            + physical_lc1
+            * self.counts_per_newton
+            + raw_noise1
         )
+
         raw2 = int(
             self.raw_baseline[1]
-            + f2 * self.counts_per_newton
+            + physical_lc2
+            * self.counts_per_newton
+            + raw_noise2
         )
+
         raw3 = int(
             self.raw_baseline[2]
-            + f3 * self.counts_per_newton
+            + physical_lc3
+            * self.counts_per_newton
+            + raw_noise3
         )
+
+        # =====================================================
+        # 현재 CAL_SET으로 저장된 Calibration 값
+        # =====================================================
+
+        cal1 = self.calibration["LC1"]
+        cal2 = self.calibration["LC2"]
+        cal3 = self.calibration["LC3"]
+
+        # =====================================================
+        # 실제 ESP32 방식으로 Force 계산
+        #
+        # F = (RAW - TARE) * FORCE_FACTOR
+        # =====================================================
+
+        f1 = (
+            raw1
+            - cal1["tare"]
+        ) * cal1[factor_key]
+
+        f2 = (
+            raw2
+            - cal2["tare"]
+        ) * cal2[factor_key]
+
+        f3 = (
+            raw3
+            - cal3["tare"]
+        ) * cal3[factor_key]
+
+        # =====================================================
+        # F Packet
+        # =====================================================
 
         packet = (
             f"F,"

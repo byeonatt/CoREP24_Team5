@@ -1,6 +1,7 @@
 # connect_dialog.py
 
 import threading
+import serial.tools.list_ports
 
 from PySide6.QtWidgets import QDialog, QMessageBox
 from PySide6.QtUiTools import QUiLoader
@@ -16,8 +17,11 @@ class UsbScanSignals(QObject):
 
 class ConnectDialog:
 
-    def __init__(self, serial_manager=None):
+    def __init__(self, serial_manager=None, config=None):
         self.serial_manager = serial_manager
+        self.config = config
+        self.pending_port_info = None
+        self.pending_baudrate = None
 
         ui_path = Path(__file__).parent / "connect_dialog.ui"
         ui_file = QFile(str(ui_path))
@@ -127,6 +131,9 @@ class ConnectDialog:
         device = port_info["device"]
         baudrate = int(self.dialog.cmbBaudrate.currentText())
 
+        self.pending_port_info = port_info
+        self.pending_baudrate = baudrate
+
         self.loading_dialog = LoadingDialog("연결 중입니다...")
         self.loading_dialog.show()
         self.dialog.btnConnect.setEnabled(False)
@@ -144,10 +151,29 @@ class ConnectDialog:
         self.dialog.btnConnect.setEnabled(True)
 
         if success:
+            if self.config and self.pending_port_info:
+                info = self.pending_port_info
+
+                self.config.set_last_device(
+                    port=info.get("port", ""),
+                    vid=info.get("vid", 0),
+                    pid=info.get("pid", 0),
+                    serial_number=info.get("serial_number", ""),
+                    baudrate=self.pending_baudrate or 115200
+                )
+            self.pending_port_info = None
+            self.pending_baudrate = None
             self.dialog.accept()
         else:
-            QMessageBox.warning(self.dialog, "연결 실패", message or "장치 연결에 실패했습니다.")
+            self.pending_port_info = None
+            self.pending_baudrate = None
+            QMessageBox.warning(
+                self.dialog,
+                "연결 실패",
+                message or "장치 연결에 실패했습니다."
+            )
 
+            
     def start_usb_scan(self):
         if not self.serial_manager:
             return

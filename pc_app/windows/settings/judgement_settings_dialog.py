@@ -253,34 +253,10 @@ class JudgementSettingsDialog:
         ]
 
         for spin_box in spin_boxes:
+            spin_box.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.UpDownArrows)
+            spin_box.setSingleStep(0.1)
+            spin_box.setAccelerated(True)
+            spin_box.setRange(0.0,1000.0)
+            spin_box.setDecimals(3)
+            spin_box.setReadOnly(False)
 
-            # 위/아래 화살표 명시
-            spin_box.setButtonSymbols(
-                QAbstractSpinBox.ButtonSymbols.UpDownArrows
-            )
-
-            # 클릭 한 번당 0.1 N
-            spin_box.setSingleStep(
-                0.1
-            )
-
-            # 꾹 누르면 연속 변경
-            spin_box.setAccelerated(
-                True
-            )
-
-            # 입력 가능한 범위
-            spin_box.setRange(
-                0.0,
-                1000.0
-            )
-
-            # 표시 소수점
-            spin_box.setDecimals(
-                3
-            )
-
-            # 직접 입력도 가능
-            spin_box.setReadOnly(
-                False
-            )

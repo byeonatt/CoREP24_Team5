@@ -26,17 +26,14 @@ class PacketType(Enum):
 
 @dataclass
 class ForceData:
-    raw_lc1: int
-    raw_lc2: int
-    raw_lc3: int
+    raw_lc1: float
+    raw_lc2: float
+    raw_lc3: float
     force_lc1: float
     force_lc2: float
     force_lc3: float
+    total_force: float
     status: int
-
-    @property
-    def total_force(self):
-        return (self.force_lc1+self.force_lc2+self.force_lc3)
 
     @property
     def status_ok(self):
@@ -67,19 +64,21 @@ def parse_packet(line: str):
 
     try:
         if code == "F":
-            if len(parts) != 8: return None
+            if len(parts) != 9: return None
 
-            status = int(parts[7], 0)
+            total_force = float(parts[7])
+            status = int(parts[8], 0)
 
             data = ForceData(
-                raw_lc1=int(parts[1]),
-                raw_lc2=int(parts[2]),
-                raw_lc3=int(parts[3]),
+                raw_lc1=float(parts[1]),
+                raw_lc2=float(parts[2]),
+                raw_lc3=float(parts[3]),
 
                 force_lc1=float(parts[4]),
                 force_lc2=float(parts[5]),
                 force_lc3=float(parts[6]),
 
+                total_force=total_force,
                 status=status
             )
             return Packet(PacketType.FORCE, data)

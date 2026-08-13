@@ -610,3 +610,23 @@ class Config:
         }
 
         self.save()
+
+
+    def set_last_device(self, port, vid=None, pid=None, serial_number=None, baudrate=115200):
+        self.config["last_device"] = {
+            "port": port,
+            "vid": vid if vid is not None else 0,
+            "pid": pid if pid is not None else 0,
+            "serial_number": serial_number or "",
+            "baudrate": int(baudrate),
+        }
+        self.save()
+
+
+    def get_last_device(self):
+        device = self.config.get("last_device", {})
+
+        if not device.get("port"):
+            return None
+
+        return device

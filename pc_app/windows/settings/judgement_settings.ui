@@ -62,8 +62,20 @@ QDoubleSpinBox {
     background: white;
     border: 1px solid #cfd5dc;
     border-radius: 5px;
-    padding: 5px 8px;
+    padding: 5px 24px 5px 8px;
     min-height: 25px;
+}
+
+QDoubleSpinBox::up-button {
+    subcontrol-origin: border;
+    subcontrol-position: top right;
+    width: 20px;
+}
+
+QDoubleSpinBox::down-button {
+    subcontrol-origin: border;
+    subcontrol-position: bottom right;
+    width: 20px;
 }
 QPushButton {
     background: #ffffff;

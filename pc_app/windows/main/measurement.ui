@@ -809,19 +809,6 @@ QStatusBar {
           </widget>
          </item>
          <item>
-          <widget class="QPushButton" name="zeroButton">
-           <property name="minimumSize">
-            <size>
-             <width>0</width>
-             <height>52</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>◎  영점 설정</string>
-           </property>
-          </widget>
-         </item>
-         <item>
           <widget class="QPushButton" name="modeButton">
            <property name="minimumSize">
             <size>
@@ -831,6 +818,19 @@ QStatusBar {
            </property>
            <property name="text">
             <string>⚙  모드 설정</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="zeroButton">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>52</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>◎  영점 설정</string>
            </property>
           </widget>
          </item>
@@ -1024,16 +1024,6 @@ QStatusBar {
      <height>33</height>
     </rect>
    </property>
-   <widget class="QMenu" name="menuFile">
-    <property name="title">
-     <string>파일(F)</string>
-    </property>
-   </widget>
-   <widget class="QMenu" name="menuMeasurement">
-    <property name="title">
-     <string>측정(M)</string>
-    </property>
-   </widget>
    <widget class="QMenu" name="menuSettings">
     <property name="title">
      <string>설정(S)</string>
@@ -1054,9 +1044,15 @@ QStatusBar {
     <property name="title">
      <string>도움말(H)</string>
     </property>
+    <addaction name="actionUserGuide"/>
+    <addaction name="separator"/>
+    <addaction name="actionHelpCommunication"/>
+    <addaction name="actionHelpMeasurement"/>
+    <addaction name="actionHelpCalibration"/>
+    <addaction name="actionHelpStorage"/>
+    <addaction name="separator"/>
+    <addaction name="actionAbout"/>
    </widget>
-   <addaction name="menuFile"/>
-   <addaction name="menuMeasurement"/>
    <addaction name="menuSettings"/>
    <addaction name="menuData"/>
    <addaction name="menuHelp"/>
@@ -1084,6 +1080,39 @@ QStatusBar {
   <action name="actionSaveDirectory">
    <property name="text">
     <string>저장 경로 지정</string>
+   </property>
+  </action>
+  <action name="actionUserGuide">
+   <property name="text">
+    <string>사용 설명서</string>
+   </property>
+   <property name="shortcut">
+    <string>F1</string>
+   </property>
+  </action>
+  <action name="actionHelpCommunication">
+   <property name="text">
+    <string>통신 도움말</string>
+   </property>
+  </action>
+  <action name="actionHelpMeasurement">
+   <property name="text">
+    <string>측정 도움말</string>
+   </property>
+  </action>
+  <action name="actionHelpCalibration">
+   <property name="text">
+    <string>캘리브레이션 도움말</string>
+   </property>
+  </action>
+  <action name="actionHelpStorage">
+   <property name="text">
+    <string>저장 도움말</string>
+   </property>
+  </action>
+  <action name="actionAbout">
+   <property name="text">
+    <string>프로그램 정보</string>
    </property>
   </action>
  </widget>

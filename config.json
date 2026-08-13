@@ -4,20 +4,27 @@
     "com_port": "AUTO",
     "auto_save": true,
     "auto_reconnect": true,
-    "last_session_id": 7,
+    "last_session_id": 1,
     "judgement": {
         "enabled": true,
         "MODE_OD": {
-            "min_force": 2.8,
-            "max_force": 3.2
+            "min_force": 0.1,
+            "max_force": 10.0
         },
         "MODE_ID_2": {
-            "min_force": 0.0,
+            "min_force": 0.1,
             "max_force": 10.0
         },
         "MODE_ID_3": {
-            "min_force": 0.0,
+            "min_force": 0.1,
             "max_force": 10.0
         }
+    },
+    "last_device": {
+        "port": "COM9",
+        "vid": 4292,
+        "pid": 60000,
+        "serial_number": "0001",
+        "baudrate": 115200
     }
 }

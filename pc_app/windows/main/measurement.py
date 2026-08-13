@@ -1,19 +1,22 @@
 import time
 
-from PySide6.QtWidgets import QMainWindow, QMessageBox, QInputDialog, QTableWidgetItem, QFileDialog
+from PySide6.QtWidgets import QMainWindow, QMessageBox, QInputDialog, QTableWidgetItem, QFileDialog, QApplication
 from PySide6.QtUiTools import QUiLoader
-from PySide6.QtCore import QFile, QIODevice, QTimer
+from PySide6.QtCore import QFile, QIODevice, QTimer, Qt
 from pathlib import Path
 from collections import deque
 
 from data_manager.csv_manager import CSVManager
 from windows.main.connect_dialog import ConnectDialog
+from windows.main.loading_dialog import LoadingDialog
 from windows.settings.settings_dialog import SettingsDialog
 from windows.settings.judgement_settings_dialog import JudgementSettingsDialog
 from windows.calibration.calibration_window import CalibrationWindow
 from windows.main.realtime_force_graph import RealtimeForceGraph
+from windows.help.help_window import HelpWindow
 from data_manager.data_management_window import DataManagementWindow
 from data_manager.grip_event_detector import GripEventDetector
+from utils.device_change_filter import DeviceChangeFilter
 
 from communication.protocol import (
     parse_packet,
@@ -40,10 +43,12 @@ class MeasurementWindow(QMainWindow):
         self.serial_manager = serial_manager
         self.is_measuring = False
         self.connected = False
+        self.auto_connect_in_progress = False
+        self.auto_connect_target = None
+        self.auto_connect_baudrate = None
+        self.help_window = None
 
-        self.force_sum = 0
         self.peak_force = 0
-        self.sample_count = 0
 
         self.measurement_start_time = None
         self.current_csv = None
@@ -73,11 +78,13 @@ class MeasurementWindow(QMainWindow):
         self.last_force_data = None
         self.last_force_packet_time = None
         self.last_monitor_update_time = 0.0
-        self.force_packet_timeout = 1.0
+        self.serial_auto_scroll = True
+        self.force_packet_timeout = 3.0
         self.rate_sample_count = 0
         self.rate_start_time = None
 
         self.zero_in_progress = False
+        self.zero_loading_dialog = None
         self.zero_ignore_frames = 5
         self.zero_ignore_count = 0
         self.zero_samples = {"lc1": [], "lc2": [], "lc3": []}
@@ -101,6 +108,11 @@ class MeasurementWindow(QMainWindow):
         # 실시간 Force 그래프
         self.force_graph = RealtimeForceGraph(self.ui.graphContainer)
         self.force_graph.set_mode(None)
+
+        serial_scrollbar = self.ui.sessionTable.verticalScrollBar()
+        serial_scrollbar.valueChanged.connect(
+            self.on_serial_scroll_changed
+        )
         
 
         self.handshake_timer = QTimer(self)
@@ -127,6 +139,12 @@ class MeasurementWindow(QMainWindow):
         self.update_connection_status(self.connected)
         self.update_measure_mode()
         self.communication_watchdog.start()
+
+        self.device_change_filter = DeviceChangeFilter(self.on_device_change)
+        app = QApplication.instance()
+        if app is not None:
+            app.installNativeEventFilter(self.device_change_filter)
+        self.try_auto_connect()
 
 
     def test_display(self):
@@ -158,6 +176,7 @@ class MeasurementWindow(QMainWindow):
             self.serial_manager.line_received.connect(self.receive_data)
             self.serial_manager.connection_changed.connect(self.update_connection_status)
             self.serial_manager.error_occurred.connect(self.update_error_status)
+            self.serial_manager.connect_finished.connect(self.handle_auto_connect_finished)
 
         # UI Button 연결
         self.ui.zeroButton.clicked.connect(self.zero_adjustment)
@@ -171,6 +190,12 @@ class MeasurementWindow(QMainWindow):
         self.ui.dataTabButton.clicked.connect(self.open_data_management_window)
         self.ui.actionDataManagement.triggered.connect(self.open_data_management_window)
         self.ui.actionSaveDirectory.triggered.connect(self.select_save_directory)
+        self.ui.actionUserGuide.triggered.connect(lambda _checked=False: self.open_help(0))
+
+        self.ui.actionHelpCommunication.triggered.connect(lambda _checked=False: self.open_help(0))
+        self.ui.actionHelpMeasurement.triggered.connect(lambda _checked=False: self.open_help(1))
+        self.ui.actionHelpCalibration.triggered.connect(lambda _checked=False: self.open_help(2))
+        self.ui.actionHelpStorage.triggered.connect(lambda _checked=False: self.open_help(3))
 
 
     def update_connection_status(self, connected):
@@ -198,6 +223,7 @@ class MeasurementWindow(QMainWindow):
             self.device_ready = False
             self.is_measuring = False
             self.zero_in_progress = False
+            self.close_zero_loading()
 
             self.zero_ignore_count = 0
             self.zero_samples = {
@@ -276,7 +302,7 @@ class MeasurementWindow(QMainWindow):
         self.ui.actionJudgementSettings.setEnabled(not self.is_measuring and not self.zero_in_progress)
 
     def open_connect_dialog(self):
-        dialog = ConnectDialog(self.serial_manager) 
+        dialog = ConnectDialog(self.serial_manager, self.config) 
         dialog.exec()
 
     def open_judgement_settings(self):
@@ -335,8 +361,6 @@ class MeasurementWindow(QMainWindow):
 
             # 측정값 초기화
             self.peak_force = 0.0
-            self.force_sum = 0.0
-            self.sample_count = 0
             self.rate_sample_count = 0
 
             # Grip Event 초기화
@@ -536,15 +560,21 @@ class MeasurementWindow(QMainWindow):
         if reply != QMessageBox.Yes: return
 
         command = create_command(Command.ZERO)
-        if not self.serial_manager.send_data(command):
-            self.update_error_status("영점 설정 명령 전송에 실패했습니다.")
-            return
 
         self.zero_in_progress = True
         self.zero_ignore_count = 0
         self.zero_samples = {"lc1": [], "lc2": [], "lc3": []}
         self.ui.operationStateLabel.setText("●  영점 설정 확인 중")
         self.update_button_state()
+
+        self.show_zero_loading()
+
+        if not self.serial_manager.send_data(command):
+            self.zero_in_progress = False
+            self.close_zero_loading()
+            self.update_button_state()
+            self.update_error_status("영점 설정 명령 전송에 실패했습니다.")
+            return
 
 
     def update_adc_status(self, data):
@@ -730,9 +760,7 @@ class MeasurementWindow(QMainWindow):
             self.peak_force = total_force
 
         self.ui.peakForceLabel.setText(f"{self.peak_force:.2f} N")
-
-        self.force_sum += total_force
-        self.sample_count += 1
+        
 
     def check_force_packet_timeout(self):
         if not self.connected: return
@@ -748,6 +776,7 @@ class MeasurementWindow(QMainWindow):
             if self.zero_in_progress:
                 self.zero_in_progress = False
                 self.zero_samples.clear()
+                self.close_zero_loading()
 
             if self.is_measuring:
                 self.grip_event_detector.cancel_active_event()
@@ -770,44 +799,47 @@ class MeasurementWindow(QMainWindow):
     def update_serial_monitor(self, data):
         now = time.monotonic()
 
-        if now - self.last_monitor_update_time < 0.1 : return
+        if now - self.last_monitor_update_time < 0.1:
+            return
 
         self.last_monitor_update_time = now
-        row = self.ui.sessionTable.rowCount()
-        self.ui.sessionTable.insertRow(row)
+
+        table = self.ui.sessionTable
+        scrollbar = table.verticalScrollBar()
+        max_rows = 100
+        auto_scroll = self.serial_auto_scroll
+        old_value = scrollbar.value()
+
+        while table.rowCount() >= max_rows:
+            table.removeRow(0)
+
+        row = table.rowCount()
+        table.insertRow(row)
 
         timestamp = time.strftime("%H:%M:%S")
 
         values = [
             timestamp,
-
             str(data.raw_lc1),
             f"{data.force_lc1:.3f}",
-
             str(data.raw_lc2),
             f"{data.force_lc2:.3f}",
-
             str(data.raw_lc3),
             f"{data.force_lc3:.3f}",
-
             f"{data.total_force:.3f}"
         ]
 
         for column, value in enumerate(values):
-            self.ui.sessionTable.setItem(
-                row,
-                column,
-                QTableWidgetItem(value)
+            table.setItem(row, column, QTableWidgetItem(value))
+
+        if auto_scroll:
+            QTimer.singleShot(0, self.scroll_serial_to_bottom)
+
+        else:
+            QTimer.singleShot(
+                0, lambda value=old_value:
+                    table.verticalScrollBar().setValue(value)
             )
-
-        self.ui.sessionTable.scrollToBottom()
-        max_rows = 200
-
-        while (
-            self.ui.sessionTable.rowCount()
-            > max_rows
-        ):
-            self.ui.sessionTable.removeRow(0)
 
     def update_measurement_time(self):
         if not self.is_measuring: return
@@ -840,6 +872,7 @@ class MeasurementWindow(QMainWindow):
             self.zero_in_progress = False
             self.zero_ignore_count = 0
             self.zero_samples = {"lc1": [], "lc2": [], "lc3": []}
+            self.close_zero_loading()
             self.ui.operationStateLabel.setText("●  영점 설정 실패")
 
             self.update_button_state()
@@ -868,6 +901,7 @@ class MeasurementWindow(QMainWindow):
         active_cells = self.get_active_load_cells()
         if not active_cells:
             self.zero_in_progress = False
+            self.close_zero_loading()
             self.ui.operationStateLabel.setText("●  영점 설정 실패")
             self.update_button_state()
             QMessageBox.warning(
@@ -901,6 +935,7 @@ class MeasurementWindow(QMainWindow):
         self.zero_in_progress = False
         self.zero_ignore_count = 0
         self.zero_samples = {"lc1": [], "lc2": [], "lc3": []}
+        self.close_zero_loading()
 
         if success:
             self.ui.operationStateLabel.setText("●  영점 설정 완료")
@@ -1120,6 +1155,12 @@ class MeasurementWindow(QMainWindow):
                 f"\n\n{e}"
             )
 
+    def open_help(self, tab_index=0):
+        if self.help_window is None:
+            self.help_window = HelpWindow(parent=self)
+        self.help_window.show_section(tab_index)
+
+
 
 
     ### 이하 테스트용 함수 (앱으로 빌드할 때 삭제) ###
@@ -1138,15 +1179,11 @@ class MeasurementWindow(QMainWindow):
             return
 
         try:
-            start_func(
-                first_delay_s=2.0
-            )
-
+            start_func(first_delay_s=2.0)
             print(
                 "[SIM] Measurement 시작과 "
                 "자동 Grip 테스트 동기화"
             )
-
         except Exception as e:
             print(
                 "[SIM] 자동 Grip 테스트 "
@@ -1176,3 +1213,126 @@ class MeasurementWindow(QMainWindow):
                 "[SIM] 자동 Grip 테스트 "
                 f"종료 실패: {e}"
             )
+
+    def on_device_change(self, change_type):
+        if change_type not in ("arrival", "changed"):
+            return
+        if self.connected:
+            return
+        if self.auto_connect_in_progress:
+            return
+        self.try_auto_connect()
+
+    def try_auto_connect(self):
+
+        if not self.serial_manager: return
+        if not self.config: return
+        if self.connected: return
+        if self.auto_connect_in_progress: return
+
+        last_device = self.config.get_last_device()
+        if not last_device: return
+
+        ports = self.serial_manager.find_ports()
+        ports = [
+            port for port in ports
+            if port.get("connectable", False)
+        ]
+
+        if not ports: return
+        target = None
+
+        saved_serial = (last_device.get("serial_number") or "")
+
+        if saved_serial:
+            for port in ports:
+                if (
+                    port.get("serial_number") or ""
+                ) == saved_serial:
+                    target = port
+                    break
+
+        if target is None:
+            saved_vid = last_device.get("vid") or 0
+            saved_pid = last_device.get("pid") or 0
+
+            if saved_vid and saved_pid:
+                matches = [
+                    port
+                    for port in ports
+                    if (
+                        port.get("vid") == saved_vid
+                        and
+                        port.get("pid") == saved_pid
+                    )
+                ]
+
+                if len(matches) == 1:
+                    target = matches[0]
+
+        if target is None:
+            saved_port = last_device.get("port") or ""
+            for port in ports:
+                if port.get("port") == saved_port:
+                    target = port
+                    break
+
+        if target is None:
+            return
+        port_name = target["port"]
+        device_name = (target.get("description") or "Serial Device")
+
+        baudrate = int(last_device.get("baudrate") or 115200)
+
+        self.auto_connect_in_progress = True
+        self.auto_connect_target = target
+        self.serial_manager.connect_async(
+            port_name,
+            baudrate,
+            device_name
+        )
+
+    def handle_auto_connect_finished(self, success, message):
+
+        target = self.auto_connect_target
+        baudrate = self.auto_connect_baudrate
+
+        self.auto_connect_in_progress = False
+        self.auto_connect_target = None
+
+        if success and target and self.config:
+            
+            self.config.set_last_device(
+                port=target.get("port", ""),
+                vid=target.get("vid", 0),
+                pid=target.get("pid", 0),
+                serial_number=target.get(
+                    "serial_number",
+                    ""
+                ),
+                baudrate=baudrate or 115200
+            )
+
+    def on_serial_scroll_changed(self, value):
+            scrollbar = self.ui.sessionTable.verticalScrollBar()
+            at_bottom = value >= scrollbar.maximum() - 1
+            self.serial_auto_scroll = at_bottom   
+
+    def show_zero_loading(self):
+        if self.zero_loading_dialog is not None:
+            return
+        self.zero_loading_dialog = LoadingDialog("영점 조정 중입니다...")
+        self.zero_loading_dialog.show()
+
+    def close_zero_loading(self):
+        if self.zero_loading_dialog is None:
+            return
+        self.zero_loading_dialog.close()
+        self.zero_loading_dialog = None
+
+    def scroll_serial_to_bottom(self):
+        if not self.serial_auto_scroll:
+            return
+
+        table = self.ui.sessionTable
+        table.scrollToBottom()
